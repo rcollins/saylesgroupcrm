@@ -7,62 +7,42 @@
 
 <div class="row g-3 mb-4">
     <div class="col-sm-6 col-lg-3">
-        <div class="card card-crm h-100">
-            <div class="card-body d-flex align-items-center py-4">
-                <div class="rounded-3 p-3 me-3" style="background: rgba(234, 179, 8, 0.12);">
-                    <i class="bi bi-person-plus fs-2" style="color: #b45309;"></i>
-                </div>
-                <div class="flex-grow-1">
-                    <h2 class="h4 mb-0 fw-700" style="color: var(--crm-text);">{{ lead_count }}</h2>
-                    <p class="text-muted small mb-2">Active leads</p>
-                    <a href="{% url 'crm:lead_list' %}" class="btn btn-sm btn-outline-secondary me-1">View</a>
-                    <a href="{% url 'crm:lead_add' %}" class="btn btn-sm btn-crm-primary">Add</a>
-                </div>
+        <div class="card card-crm h-100" style="background-color: #153779;">
+            <div class="card-body py-4" style="color: #FFFFFF;">
+                <h2 class="h4 mb-0 fw-700" style="color: #FFFFFF;">{{ lead_count }}</h2>
+                <p class="small mb-2" style="color: #FFFFFF;">Active Leads</p>
+                <a href="{% url 'crm:lead_list' %}" class="btn btn-sm btn-outline-light me-1">View</a>
+                <a href="{% url 'crm:lead_add' %}" class="btn btn-sm btn-light text-dark">Add</a>
             </div>
         </div>
     </div>
     <div class="col-sm-6 col-lg-3">
-        <div class="card card-crm h-100">
-            <div class="card-body d-flex align-items-center py-4">
-                <div class="rounded-3 p-3 me-3" style="background: rgba(30, 73, 118, 0.1);">
-                    <i class="bi bi-people fs-2" style="color: var(--crm-primary);"></i>
-                </div>
-                <div class="flex-grow-1">
-                    <h2 class="h4 mb-0 fw-700" style="color: var(--crm-text);">{{ client_count }}</h2>
-                    <p class="text-muted small mb-2">Total clients</p>
-                    <a href="{% url 'crm:client_list' %}" class="btn btn-sm btn-outline-secondary me-1">View</a>
-                    <a href="{% url 'crm:client_add' %}" class="btn btn-sm btn-crm-primary">Add</a>
-                </div>
+        <div class="card card-crm h-100" style="background-color: #7c0b2b;">
+            <div class="card-body py-4" style="color: #FFFFFF;">
+                <h2 class="h4 mb-0 fw-700" style="color: #FFFFFF;">{{ client_count }}</h2>
+                <p class="small mb-2" style="color: #FFFFFF;">Clients</p>
+                <a href="{% url 'crm:client_list' %}" class="btn btn-sm btn-outline-light me-1">View</a>
+                <a href="{% url 'crm:client_add' %}" class="btn btn-sm btn-light text-dark">Add</a>
             </div>
         </div>
     </div>
     <div class="col-sm-6 col-lg-3">
-        <div class="card card-crm h-100">
-            <div class="card-body d-flex align-items-center py-4">
-                <div class="rounded-3 p-3 me-3" style="background: var(--crm-pill-success);">
-                    <i class="bi bi-house-door fs-2" style="color: var(--crm-pill-success-text);"></i>
-                </div>
-                <div class="flex-grow-1">
-                    <h2 class="h4 mb-0 fw-700" style="color: var(--crm-text);">{{ property_count }}</h2>
-                    <p class="text-muted small mb-2">Total properties</p>
-                    <a href="{% url 'crm:property_list' %}" class="btn btn-sm btn-outline-secondary me-1">View</a>
-                    <a href="{% url 'crm:property_add' %}" class="btn btn-sm btn-crm-primary">Add</a>
-                </div>
+        <div class="card card-crm h-100" style="background-color: #5f5309;">
+            <div class="card-body py-4" style="color: #FFFFFF;">
+                <h2 class="h4 mb-0 fw-700" style="color: #FFFFFF;">{{ property_count }}</h2>
+                <p class="small mb-2" style="color: #FFFFFF;">Properties</p>
+                <a href="{% url 'crm:property_list' %}" class="btn btn-sm btn-outline-light me-1">View</a>
+                <a href="{% url 'crm:property_add' %}" class="btn btn-sm btn-light text-dark">Add</a>
             </div>
         </div>
     </div>
     <div class="col-sm-6 col-lg-3">
-        <div class="card card-crm h-100">
-            <div class="card-body d-flex align-items-center py-4">
-                <div class="rounded-3 p-3 me-3" style="background: rgba(30, 73, 118, 0.08);">
-                    <i class="bi bi-journal-text fs-2" style="color: var(--crm-primary);"></i>
-                </div>
-                <div class="flex-grow-1">
-                    <h2 class="h4 mb-0 fw-700" style="color: var(--crm-text);">{{ transaction_count }}</h2>
-                    <p class="text-muted small mb-2">Transactions</p>
-                    <a href="{% url 'crm:transaction_list' %}" class="btn btn-sm btn-outline-secondary me-1">View</a>
-                    <a href="{% url 'crm:transaction_add' %}" class="btn btn-sm btn-crm-primary">Add</a>
-                </div>
+        <div class="card card-crm h-100" style="background-color: #023c0d;">
+            <div class="card-body py-4" style="color: #FFFFFF;">
+                <h2 class="h4 mb-0 fw-700" style="color: #FFFFFF;">{{ transaction_count }}</h2>
+                <p class="small mb-2" style="color: #FFFFFF;">Transactions</p>
+                <a href="{% url 'crm:transaction_list' %}" class="btn btn-sm btn-outline-light me-1">View</a>
+                <a href="{% url 'crm:transaction_add' %}" class="btn btn-sm btn-light text-dark">Add</a>
             </div>
         </div>
     </div>
@@ -205,24 +185,50 @@
   var border = style.getPropertyValue('--crm-border').trim() || '#e8eaed';
   var muted = style.getPropertyValue('--crm-text-muted').trim() || '#5f6368';
 
-  var chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: true, position: 'top' }
-    },
-    scales: {
-      x: {
-        grid: { color: border },
-        ticks: { color: muted, font: { size: 11 } }
+  function formatUSD(v) {
+    return (v == null || isNaN(v) ? 0 : v).toLocaleString('en-US', { maximumFractionDigits: 0, minimumFractionDigits: 0 });
+  }
+
+  function chartOptionsWithCountTooltip(countArrays) {
+    var counts = countArrays || [[], [], []];
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, position: 'top' },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              var count = (counts[context.datasetIndex] && counts[context.datasetIndex][context.dataIndex]) || 0;
+              return context.dataset.label + ': $' + formatUSD(context.raw) + ' (' + count + ')';
+            }
+          }
+        }
       },
-      y: {
-        beginAtZero: true,
-        grid: { color: border },
-        ticks: { color: muted, font: { size: 11 }, callback: function(v) { return '$' + (v >= 1000 ? (v/1000) + 'K' : v); } }
+      scales: {
+        x: {
+          grid: { color: border },
+          ticks: { color: muted, font: { size: 11 } }
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: border },
+          ticks: { color: muted, font: { size: 11 }, callback: function(v) { return '$' + (v >= 1000 ? (v/1000) + 'K' : v); } }
+        }
       }
-    }
-  };
+    };
+  }
+
+  var incomeCounts = [
+    data.income_count_buyer || [],
+    data.income_count_seller || [],
+    data.income_count_dual || []
+  ];
+  var salesCounts = [
+    data.sales_count_buyer || [],
+    data.sales_count_seller || [],
+    data.sales_count_dual || []
+  ];
 
   if (document.getElementById('incomeChart')) {
     new Chart(document.getElementById('incomeChart'), {
@@ -235,7 +241,7 @@
           { label: 'Dual', data: data.income_by_month_dual || [], backgroundColor: colorDual + '99', borderColor: colorDual, borderWidth: 1 }
         ]
       },
-      options: chartOptions
+      options: chartOptionsWithCountTooltip(incomeCounts)
     });
   }
 
@@ -250,7 +256,7 @@
           { label: 'Dual', data: data.sales_by_month_dual || [], backgroundColor: colorDual + '99', borderColor: colorDual, borderWidth: 1 }
         ]
       },
-      options: chartOptions
+      options: chartOptionsWithCountTooltip(salesCounts)
     });
   }
 

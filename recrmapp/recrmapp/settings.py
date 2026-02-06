@@ -144,4 +144,4 @@ if RESEND_API_KEY:
 else:
     # No API key: use console backend so send_mail() doesn't fail (e.g. in dev)
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-    DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'robert.collinsjr@version5consulting.com')
+    DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'robert@saylesgrouphomes.com')

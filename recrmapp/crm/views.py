@@ -1,5 +1,12 @@
+import html
 import json
+import mimetypes
 import os
+from email.mime.base import MIMEBase
+from email.mime.image import MIMEImage
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email import encoders
 from datetime import date
 from decimal import Decimal
 
@@ -11,7 +18,7 @@ from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from django.contrib import messages
-from django.core.mail import EmailMessage, send_mail
+from django.core.mail import EmailMessage, EmailMultiAlternatives, get_connection, send_mail
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, FormView
 from django.urls import reverse, reverse_lazy
@@ -36,29 +43,135 @@ MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024   # 10 MB per file
 MAX_ATTACHMENTS_TOTAL = 25 * 1024 * 1024  # 25 MB total
 
 
+# Content-ID used for inline signature image in HTML email (must match img src="cid:...")
+SIGNATURE_IMAGE_CID = 'signature_logo'
+
+
+def _get_email_signature_html_and_image():
+    """Build HTML for the email signature and optional image data for CID embedding.
+    Returns (html_string, image_data) where image_data is (bytes, content_type) or None."""
+    settings_obj = AppSettings.load()
+    parts = []
+    image_data = None
+    if settings_obj.email_signature and settings_obj.email_signature.strip():
+        parts.append(settings_obj.email_signature.strip())
+    if settings_obj.signature_image:
+        try:
+            settings_obj.signature_image.open('rb')
+            try:
+                raw = settings_obj.signature_image.read()
+                content_type = (
+                    mimetypes.guess_type(settings_obj.signature_image.name)[0]
+                    or 'image/png'
+                )
+                image_data = (raw, content_type)
+                parts.append(
+                    f'<p><img src="cid:{SIGNATURE_IMAGE_CID}" alt="Signature" style="max-width:100%; height:auto;"></p>'
+                )
+            finally:
+                settings_obj.signature_image.close()
+        except (ValueError, AttributeError, OSError):
+            pass
+    if not parts:
+        return '', None
+    html_block = '<div class="email-signature" style="margin-top:1.5em; padding-top:1em; border-top:1px solid #eee;">' + ''.join(parts) + '</div>'
+    return html_block, image_data
+
+
 def _send_email_with_attachments(to_list, subject, body, request):
-    """Build and send an EmailMessage with optional attachments. to_list is a list of email addresses."""
-    message = EmailMessage(
-        subject=subject,
-        body=body,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        to=to_list,
-    )
+    """Build and send an EmailMessage with optional attachments. Appends app signature if configured.
+    When signature includes an image, builds multipart/related with CID so the image displays inline."""
+    signature_html, signature_image_data = _get_email_signature_html_and_image()
+    body_plain = body
+    body_html = '<p>' + html.escape(body).replace('\n', '</p><p>') + '</p>' + signature_html if signature_html else None
+
     files = list(request.FILES.getlist('attachments')) if request else []
     total_size = 0
+    for f in files:
+        if f and getattr(f, 'name', None):
+            total_size += getattr(f, 'size', 0)
+    if total_size > MAX_ATTACHMENTS_TOTAL:
+        raise ValueError(f'Total attachments too large (max {MAX_ATTACHMENTS_TOTAL // (1024*1024)} MB).')
     for f in files:
         if not f or not getattr(f, 'name', None):
             continue
         if getattr(f, 'size', 0) > MAX_ATTACHMENT_SIZE:
             raise ValueError(f'File "{f.name}" is too large (max {MAX_ATTACHMENT_SIZE // (1024*1024)} MB per file).')
-        total_size += getattr(f, 'size', 0)
         ext = os.path.splitext(f.name)[1].lower()
         if ext not in ALLOWED_ATTACHMENT_EXTENSIONS:
             raise ValueError(f'File type "{ext}" not allowed. Use PDF or images (e.g. .pdf, .jpg, .png).')
+
+    if signature_image_data and body_html:
+        # Inline image: build MIME with multipart/related so img src="cid:signature_logo" works
+        img_bytes, img_content_type = signature_image_data
+        root = MIMEMultipart('mixed')
+        root['Subject'] = subject
+        root['From'] = settings.DEFAULT_FROM_EMAIL
+        root['To'] = ', '.join(to_list)
+        related = MIMEMultipart('related')
+        alt = MIMEMultipart('alternative')
+        alt.attach(MIMEText(body_plain, 'plain'))
+        alt.attach(MIMEText(body_html, 'html'))
+        related.attach(alt)
+        img = MIMEImage(img_bytes, _subtype=img_content_type.split('/')[-1] if '/' in img_content_type else 'png')
+        img.add_header('Content-ID', f'<{SIGNATURE_IMAGE_CID}>')
+        img.add_header('Content-Disposition', 'inline', filename='signature')
+        related.attach(img)
+        root.attach(related)
+        for f in files:
+            if not f or not getattr(f, 'name', None):
+                continue
+            f.seek(0)
+            content = f.read()
+            part = MIMEBase('application', 'octet-stream')
+            part.set_payload(content)
+            encoders.encode_base64(part)
+            part.add_header('Content-Disposition', 'attachment', filename=f.name)
+            root.attach(part)
+        # Send via backend (Anymail/Resend needs .to, .from_email, .subject, .body, .alternatives, .message(), .recipients())
+        # Capture in locals so the class body can reference them reliably
+        _to_list = to_list
+        _from_email = settings.DEFAULT_FROM_EMAIL
+        _subject = subject
+        _root = root
+        _body_plain = body_plain
+        _body_html = body_html
+
+        class _Wrapper:
+            to = _to_list
+            from_email = _from_email
+            subject = _subject
+            body = _body_plain
+            content_subtype = 'plain'
+            alternatives = [(_body_html, 'text/html')]
+
+            def recipients(self):
+                return _to_list
+
+            def message(self):
+                return _root
+        get_connection().send_messages([_Wrapper()])
+        return
+    elif body_html:
+        message = EmailMultiAlternatives(
+            subject=subject,
+            body=body_plain,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=to_list,
+        )
+        message.attach_alternative(body_html, 'text/html')
+    else:
+        message = EmailMessage(
+            subject=subject,
+            body=body_plain,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=to_list,
+        )
+    for f in files:
+        if not f or not getattr(f, 'name', None):
+            continue
         f.seek(0)
         message.attach(f.name, f.read(), f.content_type or 'application/octet-stream')
-    if total_size > MAX_ATTACHMENTS_TOTAL:
-        raise ValueError(f'Total attachments too large (max {MAX_ATTACHMENTS_TOTAL // (1024*1024)} MB).')
     message.send(fail_silently=False)
 
 
@@ -166,22 +279,27 @@ def home(request):
     if len(sales_months) == 1:
         month_labels_sales = [f"{sales_months[0][0]} {sales_months[0][1]}"]
 
-    # Sales by month and representation (buyer / seller / dual)
+    # Sales by month and representation (buyer / seller / dual), with counts
     sales_queryset = (
         Transaction.objects.filter(status='closed', updated_at__gte=sales_start, updated_at__lte=sales_end)
         .annotate(month=TruncMonth('updated_at'))
         .values('month', 'representation')
-        .annotate(total=Sum('final_sales_price'))
+        .annotate(total=Sum('final_sales_price'), count=Count('id'))
         .order_by('month', 'representation')
     )
     sales_by_key = {}  # (y, m, rep) -> total
+    sales_count_by_key = {}  # (y, m, rep) -> count
     for item in sales_queryset:
         key = (item['month'].year, item['month'].month, item['representation'])
         sales_by_key[key] = float(item['total'] or 0)
+        sales_count_by_key[key] = item['count'] or 0
     sales_by_month = []
     sales_by_month_buyer = []
     sales_by_month_seller = []
     sales_by_month_dual = []
+    sales_count_buyer = []
+    sales_count_seller = []
+    sales_count_dual = []
     for _, y, m in sales_months:
         by_rep = (
             sales_by_key.get((y, m, 'buyer'), 0),
@@ -192,13 +310,17 @@ def home(request):
         sales_by_month_buyer.append(by_rep[0])
         sales_by_month_seller.append(by_rep[1])
         sales_by_month_dual.append(by_rep[2])
+        sales_count_buyer.append(sales_count_by_key.get((y, m, 'buyer'), 0))
+        sales_count_seller.append(sales_count_by_key.get((y, m, 'seller'), 0))
+        sales_count_dual.append(sales_count_by_key.get((y, m, 'dual'), 0))
 
-    # Income (GCI) by month and representation (buyer / seller / dual)
+    # Income (GCI) by month and representation (buyer / seller / dual), with counts
     closed_txns = Transaction.objects.filter(
         status='closed', updated_at__gte=income_start, updated_at__lte=income_end
     ).select_related('property')
     gci_by_key = {(y, m): Decimal('0') for _, y, m in income_months}
     gci_by_rep = {(y, m, rep): Decimal('0') for _, y, m in income_months for rep in ('buyer', 'seller', 'dual')}
+    count_by_rep = {(y, m, rep): 0 for _, y, m in income_months for rep in ('buyer', 'seller', 'dual')}
     for t in closed_txns:
         if t.gci is not None:
             key = (t.updated_at.year, t.updated_at.month)
@@ -208,10 +330,14 @@ def home(request):
                 gci_by_key[key] += t.gci
             if rep_key in gci_by_rep:
                 gci_by_rep[rep_key] += t.gci
+                count_by_rep[rep_key] += 1
     income_by_month = [float(gci_by_key[(y, m)]) for _, y, m in income_months]
     income_by_month_buyer = [float(gci_by_rep.get((y, m, 'buyer'), 0)) for _, y, m in income_months]
     income_by_month_seller = [float(gci_by_rep.get((y, m, 'seller'), 0)) for _, y, m in income_months]
     income_by_month_dual = [float(gci_by_rep.get((y, m, 'dual'), 0)) for _, y, m in income_months]
+    income_count_buyer = [count_by_rep.get((y, m, 'buyer'), 0) for _, y, m in income_months]
+    income_count_seller = [count_by_rep.get((y, m, 'seller'), 0) for _, y, m in income_months]
+    income_count_dual = [count_by_rep.get((y, m, 'dual'), 0) for _, y, m in income_months]
 
     total_income = sum(income_by_month)
     total_sales = sum(sales_by_month)
@@ -246,10 +372,16 @@ def home(request):
             'income_by_month_buyer': income_by_month_buyer,
             'income_by_month_seller': income_by_month_seller,
             'income_by_month_dual': income_by_month_dual,
+            'income_count_buyer': income_count_buyer,
+            'income_count_seller': income_count_seller,
+            'income_count_dual': income_count_dual,
             'sales_by_month': sales_by_month,
             'sales_by_month_buyer': sales_by_month_buyer,
             'sales_by_month_seller': sales_by_month_seller,
             'sales_by_month_dual': sales_by_month_dual,
+            'sales_count_buyer': sales_count_buyer,
+            'sales_count_seller': sales_count_seller,
+            'sales_count_dual': sales_count_dual,
             'chart_colors': {
                 'buyer': chart_colors.get('buyer') or chart_colors.get('income_bar', '#1e4976'),
                 'seller': chart_colors.get('seller') or chart_colors.get('sales_bar', '#137333'),

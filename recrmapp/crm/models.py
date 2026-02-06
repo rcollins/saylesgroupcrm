@@ -631,7 +631,7 @@ class TransactionNote(models.Model):
 # --- Application admin (separate from Django admin) ---
 
 class AppSettings(models.Model):
-    """Singleton: application name, logo, and chart colors. Edited via Application Admin UI."""
+    """Singleton: application name, logo, chart colors, and email signature. Edited via Application Admin UI."""
     app_name = models.CharField(max_length=100, default='RE CRM')
     logo = models.FileField(upload_to='app_admin/', blank=True, null=True, help_text='Logo image (e.g. PNG, SVG)')
     # Chart colors: JSON e.g. {"buyer": "#1e4976", "seller": "#137333", "dual": "#b45309"}
@@ -639,6 +639,18 @@ class AppSettings(models.Model):
         default=dict,
         blank=True,
         help_text='Keys: buyer, seller, dual (hex colors for dashboard charts)',
+    )
+    # Email signature: HTML used when sending emails (supports <a href>, <img src="url">, etc.)
+    email_signature = models.TextField(
+        blank=True,
+        help_text='HTML signature appended to outgoing emails. Use &lt;a href="url"&gt; for links and &lt;img src="url"&gt; for images.',
+    )
+    # Optional uploaded image shown in signature (displayed after email_signature HTML)
+    signature_image = models.FileField(
+        upload_to='app_admin/signature/',
+        blank=True,
+        null=True,
+        help_text='Optional image (e.g. logo or photo) shown at the end of the email signature.',
     )
 
     class Meta:
