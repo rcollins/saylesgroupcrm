@@ -82,6 +82,9 @@
                 <button class="nav-link active" id="parties-tab" data-bs-toggle="tab" data-bs-target="#parties" type="button" role="tab"><i class="bi bi-people me-1"></i> Parties</button>
             </li>
             <li class="nav-item" role="presentation">
+                <button class="nav-link" id="email-tab" data-bs-toggle="tab" data-bs-target="#email" type="button" role="tab"><i class="bi bi-envelope me-1"></i> Email</button>
+            </li>
+            <li class="nav-item" role="presentation">
                 <button class="nav-link" id="tasks-tab" data-bs-toggle="tab" data-bs-target="#tasks" type="button" role="tab"><i class="bi bi-check2-square me-1"></i> Tasks</button>
             </li>
         </ul>
@@ -180,6 +183,43 @@
                         {% else %}
                         <p class="text-muted small mb-0">No parties added yet. Click Add Party to link clients or add contacts.</p>
                         {% endif %}
+                    </div>
+                </div>
+            </div>
+            {# Email tab #}
+            <div class="tab-pane fade" id="email" role="tabpanel">
+                <div class="card card-crm">
+                    <div class="card-header">
+                        <h5 class="mb-0 section-title">Send email</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" action="{% url 'crm:transaction_send_email' transaction.pk %}" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <div class="mb-2">
+                                <label for="id_recipient" class="form-label">To</label>
+                                {{ transaction_email_form.recipient }}
+                                {% if transaction_email_form.recipient.errors %}<div class="invalid-feedback d-block">{{ transaction_email_form.recipient.errors.0 }}</div>{% endif %}
+                            </div>
+                            <div class="mb-2" id="other-email-wrap">
+                                <label for="id_other_email" class="form-label">Or enter email address</label>
+                                {{ transaction_email_form.other_email }}
+                                {% if transaction_email_form.other_email.errors %}<div class="invalid-feedback d-block">{{ transaction_email_form.other_email.errors.0 }}</div>{% endif %}
+                            </div>
+                            <div class="mb-2">
+                                <label for="id_tx_subject" class="form-label">Subject</label>
+                                <input type="text" name="subject" id="id_tx_subject" class="form-control" placeholder="Subject" required maxlength="200">
+                            </div>
+                            <div class="mb-2">
+                                <label for="id_tx_body" class="form-label">Message</label>
+                                <textarea name="body" id="id_tx_body" class="form-control" rows="4" placeholder="Message…" required></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="id_tx_attachments" class="form-label">Attachments (optional)</label>
+                                <input type="file" name="attachments" id="id_tx_attachments" class="form-control" accept=".pdf,image/*" multiple>
+                                <span class="form-text small">PDF or images; max 10 MB per file, 25 MB total.</span>
+                            </div>
+                            <button type="submit" class="btn btn-crm-primary"><i class="bi bi-envelope me-1"></i> Send email</button>
+                        </form>
                     </div>
                 </div>
             </div>

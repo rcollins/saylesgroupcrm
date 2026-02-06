@@ -13,6 +13,7 @@ urlpatterns = [
     path('clients/<int:pk>/edit/', views.ClientUpdateView.as_view(), name='client_edit'),
     path('clients/<int:pk>/delete/', views.ClientDeleteView.as_view(), name='client_delete'),
     path('clients/<int:pk>/notes/add/', views.client_add_note, name='client_add_note'),
+    path('clients/<int:pk>/send-email/', views.send_email_to_client, name='client_send_email'),
     # Contacts
     path('contacts/', views.ContactListView.as_view(), name='contact_list'),
     path('contacts/add/', views.ContactCreateView.as_view(), name='contact_add'),
@@ -20,6 +21,7 @@ urlpatterns = [
     path('contacts/<int:pk>/edit/', views.ContactUpdateView.as_view(), name='contact_edit'),
     path('contacts/<int:pk>/delete/', views.ContactDeleteView.as_view(), name='contact_delete'),
     path('contacts/<int:pk>/notes/add/', views.contact_add_note, name='contact_add_note'),
+    path('contacts/<int:pk>/send-email/', views.send_email_to_contact, name='contact_send_email'),
     # Properties
     path('properties/', views.PropertyListView.as_view(), name='property_list'),
     path('properties/add/', views.PropertyCreateView.as_view(), name='property_add'),
@@ -36,6 +38,7 @@ urlpatterns = [
     path('leads/<int:pk>/edit/', views.LeadUpdateView.as_view(), name='lead_edit'),
     path('leads/<int:pk>/delete/', views.LeadDeleteView.as_view(), name='lead_delete'),
     path('leads/<int:pk>/notes/add/', views.lead_add_note, name='lead_add_note'),
+    path('leads/<int:pk>/send-email/', views.send_email_to_lead, name='lead_send_email'),
     path('leads/<int:pk>/convert/', views.lead_convert_to_client, name='lead_convert'),
     # Transactions
     path('transactions/', views.TransactionListView.as_view(), name='transaction_list'),
@@ -44,6 +47,7 @@ urlpatterns = [
     path('transactions/<int:pk>/edit/', views.TransactionUpdateView.as_view(), name='transaction_edit'),
     path('transactions/<int:pk>/delete/', views.TransactionDeleteView.as_view(), name='transaction_delete'),
     path('transactions/<int:pk>/notes/add/', views.transaction_add_note, name='transaction_add_note'),
+    path('transactions/<int:pk>/send-email/', views.send_email_to_transaction, name='transaction_send_email'),
     path('transactions/<int:pk>/parties/add/', views.transaction_add_party, name='transaction_add_party'),
     path('transactions/<int:pk>/parties/<int:party_pk>/delete/', views.transaction_delete_party, name='transaction_delete_party'),
     path('transactions/<int:pk>/milestones/add/', views.transaction_add_milestone, name='transaction_add_milestone'),

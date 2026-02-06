@@ -130,3 +130,18 @@ MEDIA_ROOT = BASE_DIR / 'media'
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
+
+# Email (Anymail + Resend)
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY')
+if RESEND_API_KEY:
+    EMAIL_BACKEND = 'anymail.backends.resend.EmailBackend'
+    ANYMAIL = {
+        'RESEND_API_KEY': RESEND_API_KEY,
+    }
+    # From address: use a verified domain in Resend, or Resend's sandbox for testing
+    DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'The Sayles Group CRM <onboarding@resend.dev>')
+    SERVER_EMAIL = DEFAULT_FROM_EMAIL
+else:
+    # No API key: use console backend so send_mail() doesn't fail (e.g. in dev)
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'robert.collinsjr@version5consulting.com')

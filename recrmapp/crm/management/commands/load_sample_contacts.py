@@ -137,11 +137,21 @@ SAMPLE_CONTACTS = [
         "zip_code": "94510",
         "notes": "Small local office. Very responsive. Good for Benicia and Vallejo closings.",
     },
+    {"first_name": "Brian", "last_name": "O'Connor", "email": "brian@solanoappraisals.com", "phone": "707-555-1011", "contact_type": "vendor", "company": "Solano Appraisal Co", "address": "1400 Travis Blvd", "city": "Fairfield", "state": "CA", "zip_code": "94533", "notes": "Appraisals. Turnaround 5–7 days. Good for FHA/VA."},
+    {"first_name": "Diana", "last_name": "Lopez", "email": "dlopez@northbaylending.com", "phone": "707-555-1012", "contact_type": "lender", "company": "North Bay Lending", "address": "900 Adams St", "city": "Vallejo", "state": "CA", "zip_code": "94590", "notes": "Jumbo and conventional. Competitive rates."},
+    {"first_name": "Frank", "last_name": "Wei", "email": "fwei@vacavillerealty.com", "phone": "707-555-1013", "contact_type": "agent", "company": "Vacaville Realty", "address": "500 Merchant St", "city": "Vacaville", "state": "CA", "zip_code": "95687", "notes": "Listing agent. Often co-brokes on Vacaville listings."},
+    {"first_name": "Gina", "last_name": "Santos", "email": "gina@centralvalleytitle.com", "phone": "707-555-1014", "contact_type": "title_company", "company": "Central Valley Title", "address": "300 Capitol Mall", "city": "Sacramento", "state": "CA", "zip_code": "95814", "notes": "Escrow and title. Good for Sacramento-area refis."},
+    {"first_name": "Hector", "last_name": "Vega", "email": "hector@vegainspections.com", "phone": "707-555-1015", "contact_type": "inspector", "company": "Vega Home Inspections", "address": "", "city": "Fairfield", "state": "CA", "zip_code": "94533", "notes": "General and pest. Same-week scheduling. Detailed reports."},
+    {"first_name": "Ivy", "last_name": "Chen", "email": "ichen@chenrealestatelaw.com", "phone": "707-555-1016", "contact_type": "attorney", "company": "Chen Real Estate Law", "address": "100 B St", "city": "Davis", "state": "CA", "zip_code": "95616", "notes": "Residential and 1031. Yolo and Solano."},
+    {"first_name": "Jake", "last_name": "Morton", "email": "jake@mortonroofing.com", "phone": "707-555-1017", "contact_type": "vendor", "company": "Morton Roofing", "address": "600 Industrial Way", "city": "Vacaville", "state": "CA", "zip_code": "95687", "notes": "Roof repair and replacement. Licensed. Quick quotes."},
+    {"first_name": "Keisha", "last_name": "Williams", "email": "kwilliams@benicialending.com", "phone": "707-555-1018", "contact_type": "lender", "company": "Benicia Home Loans", "address": "400 First St", "city": "Benicia", "state": "CA", "zip_code": "94510", "notes": "First-time buyer programs. Down payment assistance."},
+    {"first_name": "Leo", "last_name": "Garcia", "email": "leo@riovistarealty.com", "phone": "707-555-1019", "contact_type": "agent", "company": "Rio Vista Realty", "address": "50 Main St", "city": "Rio Vista", "state": "CA", "zip_code": "94571", "notes": "Delta area specialist. Listings and buyers."},
+    {"first_name": "Maya", "last_name": "Patel", "email": "maya@solanoinsurance.com", "phone": "707-555-1020", "contact_type": "other", "company": "Solano Insurance Group", "address": "1800 Texas St", "city": "Fairfield", "state": "CA", "zip_code": "94533", "notes": "Home and umbrella. Often needed at closing."},
 ]
 
 
 class Command(BaseCommand):
-    help = "Load 10 fictional contacts (lenders, agents, title, inspector, attorney, vendors)."
+    help = "Load 20 fictional contacts (lenders, agents, title, inspector, attorney, vendors, other) with varying types."
 
     def add_arguments(self, parser):
         parser.add_argument(

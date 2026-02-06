@@ -220,6 +220,11 @@ SAMPLE_PROPERTIES = [
         "features": "River area, large lot, shed",
         "featured": True,
     },
+    {"title": "American Canyon 3BR Condo", "property_type": "condo", "status": "available", "address": "100 Watson Ranch Rd", "city": "American Canyon", "state": "CA", "zip_code": "94503", "price": Decimal("475000.00"), "bedrooms": 3, "bathrooms": Decimal("2.0"), "square_feet": 1220, "lot_size": None, "year_built": 2010, "mls_number": "324-011", "mls_service": "matrix", "mls_url": "", "description": "Family-friendly complex. Pool and playground.", "features": "2-car garage, patio", "featured": False},
+    {"title": "Fairfield Under-Contract Duplex", "property_type": "duplex", "status": "under_contract", "address": "2500 N Texas St", "city": "Fairfield", "state": "CA", "zip_code": "94533", "price": Decimal("599000.00"), "bedrooms": 4, "bathrooms": Decimal("4.0"), "square_feet": 2200, "lot_size": Decimal("5000.00"), "year_built": 1985, "mls_number": "324-012", "mls_service": "bareis", "mls_url": "", "description": "Both units updated. In escrow.", "features": "2 units, separate meters", "featured": False},
+    {"title": "Vallejo Sold Starter Home", "property_type": "single_family", "status": "sold", "address": "600 Arkansas St", "city": "Vallejo", "state": "CA", "zip_code": "94590", "price": Decimal("425000.00"), "bedrooms": 2, "bathrooms": Decimal("1.0"), "square_feet": 980, "lot_size": Decimal("4500.00"), "year_built": 1952, "mls_number": "324-013", "mls_service": "matrix", "mls_url": "", "description": "Sold to first-time buyer. Closed last month.", "features": "Corner lot, garage", "featured": False},
+    {"title": "Vacaville Off-Market Land", "property_type": "land", "status": "off_market", "address": "0 Vaca Valley Pkwy", "city": "Vacaville", "state": "CA", "zip_code": "95687", "price": Decimal("220000.00"), "bedrooms": None, "bathrooms": None, "square_feet": None, "lot_size": Decimal("21780.00"), "year_built": None, "mls_number": "", "mls_service": "", "mls_url": "", "description": "Half-acre. Seller holding. Not actively listed.", "features": "Utilities at street", "featured": False},
+    {"title": "Suisun City Townhouse", "property_type": "townhouse", "status": "available", "address": "400 Main St", "city": "Suisun City", "state": "CA", "zip_code": "94585", "price": Decimal("435000.00"), "bedrooms": 2, "bathrooms": Decimal("2.5"), "square_feet": 1100, "lot_size": None, "year_built": 2008, "mls_number": "324-015", "mls_service": "paragon", "mls_url": "", "description": "Waterfront community. Low HOA.", "features": "Balcony, 1-car garage", "featured": True},
 ]
 
 
@@ -229,7 +234,7 @@ def get_owner_by_last_name(last_name: str):
 
 
 class Command(BaseCommand):
-    help = "Load 10 fictional Solano County (CA) properties with varying status and type."
+    help = "Load 15 fictional Solano County (CA) properties with varying status and type."
 
     def add_arguments(self, parser):
         parser.add_argument(

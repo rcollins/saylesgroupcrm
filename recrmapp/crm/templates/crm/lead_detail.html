@@ -65,6 +65,34 @@
             </div>
         </div>
 
+        {% if lead.email %}
+        <div class="card card-crm mb-4">
+            <div class="card-header">
+                <h5 class="mb-0 section-title">Send email</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted small mb-3">To: {{ lead.email }}</p>
+                <form method="post" action="{% url 'crm:lead_send_email' lead.pk %}" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div class="mb-2">
+                        <label for="id_lead_subject" class="form-label">Subject</label>
+                        <input type="text" name="subject" id="id_lead_subject" class="form-control" placeholder="Subject" required maxlength="200">
+                    </div>
+                    <div class="mb-2">
+                        <label for="id_lead_body" class="form-label">Message</label>
+                        <textarea name="body" id="id_lead_body" class="form-control" rows="4" placeholder="Message…" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_lead_attachments" class="form-label">Attachments (optional)</label>
+                        <input type="file" name="attachments" id="id_lead_attachments" class="form-control" accept=".pdf,image/*" multiple>
+                        <span class="form-text small">PDF or images; max 10 MB per file, 25 MB total.</span>
+                    </div>
+                    <button type="submit" class="btn btn-crm-primary"><i class="bi bi-envelope me-1"></i> Send email</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
         {% if lead.notes %}
         <div class="card card-crm mb-4">
             <div class="card-header">

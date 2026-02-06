@@ -1,4 +1,5 @@
 import json
+import os
 from datetime import date
 from decimal import Decimal
 
@@ -10,6 +11,7 @@ from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from django.contrib import messages
+from django.core.mail import EmailMessage, send_mail
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, FormView
 from django.urls import reverse, reverse_lazy
@@ -22,11 +24,42 @@ from .choice_utils import get_choices_for_list
 from .forms import (
     ClientForm, ClientNoteForm, ContactForm, ContactNoteForm,
     LeadForm, LeadNoteForm, PropertyForm, PropertyNoteForm,
-    SignupForm,
+    SendEmailForm, SendTransactionEmailForm, SignupForm,
     TransactionForm, TransactionNoteForm, TransactionPartyForm, TransactionMilestoneForm, TransactionTaskForm,
 )
 
 MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+# Email attachments: allowed extensions and size limits
+ALLOWED_ATTACHMENT_EXTENSIONS = {'.pdf', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.tiff', '.tif'}
+MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024   # 10 MB per file
+MAX_ATTACHMENTS_TOTAL = 25 * 1024 * 1024  # 25 MB total
+
+
+def _send_email_with_attachments(to_list, subject, body, request):
+    """Build and send an EmailMessage with optional attachments. to_list is a list of email addresses."""
+    message = EmailMessage(
+        subject=subject,
+        body=body,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=to_list,
+    )
+    files = list(request.FILES.getlist('attachments')) if request else []
+    total_size = 0
+    for f in files:
+        if not f or not getattr(f, 'name', None):
+            continue
+        if getattr(f, 'size', 0) > MAX_ATTACHMENT_SIZE:
+            raise ValueError(f'File "{f.name}" is too large (max {MAX_ATTACHMENT_SIZE // (1024*1024)} MB per file).')
+        total_size += getattr(f, 'size', 0)
+        ext = os.path.splitext(f.name)[1].lower()
+        if ext not in ALLOWED_ATTACHMENT_EXTENSIONS:
+            raise ValueError(f'File type "{ext}" not allowed. Use PDF or images (e.g. .pdf, .jpg, .png).')
+        f.seek(0)
+        message.attach(f.name, f.read(), f.content_type or 'application/octet-stream')
+    if total_size > MAX_ATTACHMENTS_TOTAL:
+        raise ValueError(f'Total attachments too large (max {MAX_ATTACHMENTS_TOTAL // (1024*1024)} MB).')
+    message.send(fail_silently=False)
 
 
 def _parse_chart_filter(get_params, prefix):
@@ -342,6 +375,78 @@ def contact_add_note(request, pk):
         note.contact = contact
         note.save()
     return redirect('crm:contact_detail', pk=pk)
+
+
+@login_required
+def send_email_to_contact(request, pk):
+    """Send an email to the contact's email address (with optional attachments). Redirects back to contact detail."""
+    contact = get_object_or_404(Contact, pk=pk)
+    if not contact.email or not contact.email.strip():
+        messages.warning(request, 'This contact has no email address.')
+        return redirect('crm:contact_detail', pk=pk)
+    if request.method != 'POST':
+        return redirect('crm:contact_detail', pk=pk)
+    form = SendEmailForm(request.POST)
+    if form.is_valid():
+        try:
+            _send_email_with_attachments(
+                [contact.email.strip()],
+                form.cleaned_data['subject'],
+                form.cleaned_data['body'],
+                request,
+            )
+            messages.success(request, f'Email sent to {contact.email}.')
+        except Exception as e:
+            messages.error(request, str(e))
+    return redirect('crm:contact_detail', pk=pk)
+
+
+@login_required
+def send_email_to_client(request, pk):
+    """Send an email to the client's email address (with optional attachments). Redirects back to client detail."""
+    client = get_object_or_404(Client, pk=pk)
+    if not client.email or not client.email.strip():
+        messages.warning(request, 'This client has no email address.')
+        return redirect('crm:client_detail', pk=pk)
+    if request.method != 'POST':
+        return redirect('crm:client_detail', pk=pk)
+    form = SendEmailForm(request.POST)
+    if form.is_valid():
+        try:
+            _send_email_with_attachments(
+                [client.email.strip()],
+                form.cleaned_data['subject'],
+                form.cleaned_data['body'],
+                request,
+            )
+            messages.success(request, f'Email sent to {client.email}.')
+        except Exception as e:
+            messages.error(request, str(e))
+    return redirect('crm:client_detail', pk=pk)
+
+
+@login_required
+def send_email_to_lead(request, pk):
+    """Send an email to the lead's email address (with optional attachments). Redirects back to lead detail."""
+    lead = get_object_or_404(Lead, pk=pk)
+    if not lead.email or not lead.email.strip():
+        messages.warning(request, 'This lead has no email address.')
+        return redirect('crm:lead_detail', pk=pk)
+    if request.method != 'POST':
+        return redirect('crm:lead_detail', pk=pk)
+    form = SendEmailForm(request.POST)
+    if form.is_valid():
+        try:
+            _send_email_with_attachments(
+                [lead.email.strip()],
+                form.cleaned_data['subject'],
+                form.cleaned_data['body'],
+                request,
+            )
+            messages.success(request, f'Email sent to {lead.email}.')
+        except Exception as e:
+            messages.error(request, str(e))
+    return redirect('crm:lead_detail', pk=pk)
 
 
 @login_required
@@ -695,6 +800,7 @@ class TransactionDetailView(LoginRequiredMixin, DetailView):
         context['party_form'] = TransactionPartyForm()
         context['milestone_form'] = TransactionMilestoneForm()
         context['task_form'] = TransactionTaskForm()
+        context['transaction_email_form'] = SendTransactionEmailForm(transaction=context['transaction'])
         return context
 
 
@@ -742,6 +848,36 @@ def transaction_add_note(request, pk):
         note = form.save(commit=False)
         note.transaction = transaction
         note.save()
+    return redirect('crm:transaction_detail', pk=pk)
+
+
+@login_required
+def send_email_to_transaction(request, pk):
+    """Send an email to a transaction party or custom address (with optional attachments)."""
+    transaction = get_object_or_404(Transaction, pk=pk)
+    if request.method != 'POST':
+        return redirect('crm:transaction_detail', pk=pk)
+    form = SendTransactionEmailForm(request.POST, transaction=transaction)
+    if form.is_valid():
+        to_email = (
+            form.cleaned_data['other_email'].strip()
+            if form.cleaned_data['recipient'] == '__other__'
+            else form.cleaned_data['recipient'].strip()
+        )
+        try:
+            _send_email_with_attachments(
+                [to_email],
+                form.cleaned_data['subject'],
+                form.cleaned_data['body'],
+                request,
+            )
+            messages.success(request, f'Email sent to {to_email}.')
+        except Exception as e:
+            messages.error(request, str(e))
+    else:
+        for field_errors in form.errors.values():
+            for err in field_errors:
+                messages.error(request, err)
     return redirect('crm:transaction_detail', pk=pk)
 
 

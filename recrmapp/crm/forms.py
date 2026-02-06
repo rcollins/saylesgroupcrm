@@ -43,6 +43,60 @@ class ContactNoteForm(forms.ModelForm):
         }
 
 
+class SendEmailForm(forms.Form):
+    """Simple form to send an email (subject + body) to a contact, client, or lead. Attachments handled in view."""
+    subject = forms.CharField(
+        max_length=200,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Subject'}),
+    )
+    body = forms.CharField(
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Message…'}),
+    )
+
+
+class SendTransactionEmailForm(forms.Form):
+    """Send email to a transaction party or a custom address. Recipient choice + optional other_email."""
+    recipient = forms.ChoiceField(
+        choices=[],
+        required=True,
+        widget=forms.Select(attrs={'class': 'form-select'}),
+    )
+    other_email = forms.EmailField(
+        required=False,
+        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Or enter email address'}),
+    )
+    subject = forms.CharField(
+        max_length=200,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Subject'}),
+    )
+    body = forms.CharField(
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Message…'}),
+    )
+
+    def __init__(self, *args, transaction=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if transaction:
+            parties_with_email = [
+                p for p in transaction.parties.all()
+                if getattr(p, 'display_email', None) and p.display_email != '—'
+            ]
+            choices = [('', 'Select recipient…')]
+            for p in parties_with_email:
+                choices.append((p.display_email, f'{p.full_name} ({p.display_email})'))
+            choices.append(('__other__', 'Other (enter below)'))
+            self.fields['recipient'].choices = choices
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        data = super().clean()
+        if data.get('recipient') == '__other__':
+            if not data.get('other_email') or not (data['other_email'] or '').strip():
+                raise ValidationError({'other_email': 'Enter an email address when selecting Other.'})
+        elif not data.get('recipient'):
+            raise ValidationError({'recipient': 'Select a recipient or enter an email address.'})
+        return data
+
+
 class ContactForm(forms.ModelForm):
     class Meta:
         model = Contact
