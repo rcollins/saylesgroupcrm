@@ -1,0 +1,76 @@
+{% extends 'crm/base.html' %}
+{% block title %}{% if object %}Edit {{ object.full_name }}{% else %}Add Lead{% endif %}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'crm:lead_list' %}">Leads</a></li>
+        <li class="breadcrumb-item active">{% if object %}Edit{% else %}Add{% endif %}</li>
+    </ol>
+</nav>
+
+<h1 class="page-title mb-4">{% if object %}Edit Lead{% else %}Add Lead{% endif %}</h1>
+
+<div class="card card-crm">
+    <div class="card-body">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+            {% endif %}
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="id_first_name" class="form-label">First name</label>
+                    <input type="text" name="first_name" value="{{ form.first_name.value|default:'' }}" class="form-control {% if form.first_name.errors %}is-invalid{% endif %}" id="id_first_name" required>
+                    {% if form.first_name.errors %}<div class="invalid-feedback">{{ form.first_name.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label for="id_last_name" class="form-label">Last name</label>
+                    <input type="text" name="last_name" value="{{ form.last_name.value|default:'' }}" class="form-control {% if form.last_name.errors %}is-invalid{% endif %}" id="id_last_name" required>
+                    {% if form.last_name.errors %}<div class="invalid-feedback">{{ form.last_name.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label for="id_email" class="form-label">Email</label>
+                    {{ form.email }}
+                </div>
+                <div class="col-md-6">
+                    <label for="id_phone" class="form-label">Phone</label>
+                    {{ form.phone }}
+                </div>
+                <div class="col-md-6">
+                    <label for="id_referral" class="form-label">Referral</label>
+                    {{ form.referral }}
+                </div>
+                <div class="col-md-6">
+                    <label for="id_status" class="form-label">Status</label>
+                    {{ form.status }}
+                </div>
+                <div class="col-12">
+                    <label for="id_address" class="form-label">Address</label>
+                    {{ form.address }}
+                </div>
+                <div class="col-md-4">
+                    <label for="id_city" class="form-label">City</label>
+                    {{ form.city }}
+                </div>
+                <div class="col-md-4">
+                    <label for="id_state" class="form-label">State</label>
+                    {{ form.state }}
+                </div>
+                <div class="col-md-4">
+                    <label for="id_zip_code" class="form-label">Zip</label>
+                    {{ form.zip_code }}
+                </div>
+                <div class="col-12">
+                    <label for="id_notes" class="form-label">Notes</label>
+                    {{ form.notes }}
+                </div>
+            </div>
+            <div class="mt-4">
+                <button type="submit" class="btn btn-crm-primary">Save Lead</button>
+                <a href="{% url 'crm:lead_list' %}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

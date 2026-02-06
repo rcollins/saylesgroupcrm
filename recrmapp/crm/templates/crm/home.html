@@ -1,0 +1,274 @@
+{% extends 'crm/base.html' %}
+{% load crm_filters %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Dashboard</h1>
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-crm h-100">
+            <div class="card-body d-flex align-items-center py-4">
+                <div class="rounded-3 p-3 me-3" style="background: rgba(234, 179, 8, 0.12);">
+                    <i class="bi bi-person-plus fs-2" style="color: #b45309;"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h2 class="h4 mb-0 fw-700" style="color: var(--crm-text);">{{ lead_count }}</h2>
+                    <p class="text-muted small mb-2">Active leads</p>
+                    <a href="{% url 'crm:lead_list' %}" class="btn btn-sm btn-outline-secondary me-1">View</a>
+                    <a href="{% url 'crm:lead_add' %}" class="btn btn-sm btn-crm-primary">Add</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-crm h-100">
+            <div class="card-body d-flex align-items-center py-4">
+                <div class="rounded-3 p-3 me-3" style="background: rgba(30, 73, 118, 0.1);">
+                    <i class="bi bi-people fs-2" style="color: var(--crm-primary);"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h2 class="h4 mb-0 fw-700" style="color: var(--crm-text);">{{ client_count }}</h2>
+                    <p class="text-muted small mb-2">Total clients</p>
+                    <a href="{% url 'crm:client_list' %}" class="btn btn-sm btn-outline-secondary me-1">View</a>
+                    <a href="{% url 'crm:client_add' %}" class="btn btn-sm btn-crm-primary">Add</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-crm h-100">
+            <div class="card-body d-flex align-items-center py-4">
+                <div class="rounded-3 p-3 me-3" style="background: var(--crm-pill-success);">
+                    <i class="bi bi-house-door fs-2" style="color: var(--crm-pill-success-text);"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h2 class="h4 mb-0 fw-700" style="color: var(--crm-text);">{{ property_count }}</h2>
+                    <p class="text-muted small mb-2">Total properties</p>
+                    <a href="{% url 'crm:property_list' %}" class="btn btn-sm btn-outline-secondary me-1">View</a>
+                    <a href="{% url 'crm:property_add' %}" class="btn btn-sm btn-crm-primary">Add</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+        <div class="card card-crm h-100">
+            <div class="card-body d-flex align-items-center py-4">
+                <div class="rounded-3 p-3 me-3" style="background: rgba(30, 73, 118, 0.08);">
+                    <i class="bi bi-journal-text fs-2" style="color: var(--crm-primary);"></i>
+                </div>
+                <div class="flex-grow-1">
+                    <h2 class="h4 mb-0 fw-700" style="color: var(--crm-text);">{{ transaction_count }}</h2>
+                    <p class="text-muted small mb-2">Transactions</p>
+                    <a href="{% url 'crm:transaction_list' %}" class="btn btn-sm btn-outline-secondary me-1">View</a>
+                    <a href="{% url 'crm:transaction_add' %}" class="btn btn-sm btn-crm-primary">Add</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card card-crm h-100">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <h5 class="section-title mb-0">Income (GCI)</h5>
+                    <p class="section-subtitle mb-0">Buyer vs Seller vs Dual by month</p>
+                </div>
+                <span class="fw-600" style="color: var(--crm-primary);">{{ total_income|usd:0 }}</span>
+            </div>
+            <div class="card-body">
+                <form method="get" action="{% url 'crm:home' %}" class="dashboard-chart-filter mb-3" data-chart="income">
+                    <input type="hidden" name="sales_period" value="{{ sales_period }}">
+                    <input type="hidden" name="sales_month" value="{{ sales_month }}">
+                    <input type="hidden" name="sales_year" value="{{ sales_year }}">
+                    <input type="hidden" name="sales_from" value="{{ sales_from }}">
+                    <input type="hidden" name="sales_to" value="{{ sales_to }}">
+                    <div class="row g-2 align-items-end flex-wrap">
+                        <div class="col-auto">
+                            <label class="form-label small mb-0">Filter</label>
+                            <select name="income_period" class="form-select form-select-sm" style="width: auto;">
+                                <option value="this_year" {% if income_period == 'this_year' %}selected{% endif %}>This year</option>
+                                <option value="last_6" {% if income_period == 'last_6' %}selected{% endif %}>Last 6 months</option>
+                                <option value="last_3" {% if income_period == 'last_3' %}selected{% endif %}>Last 3 months</option>
+                                <option value="month" {% if income_period == 'month' %}selected{% endif %}>Single month</option>
+                                <option value="custom" {% if income_period == 'custom' %}selected{% endif %}>Date range</option>
+                            </select>
+                        </div>
+                        <div class="col-auto income-only-month" style="{% if income_period != 'month' %}display:none;{% endif %}">
+                            <label class="form-label small mb-0">Month</label>
+                            <select name="income_month" class="form-select form-select-sm" style="width: auto;">
+                                {% for num, name in month_choices %}<option value="{{ num }}" {% if income_month == num|stringformat:'d' %}selected{% endif %}>{{ name }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-auto income-only-month" style="{% if income_period != 'month' %}display:none;{% endif %}">
+                            <label class="form-label small mb-0">Year</label>
+                            <select name="income_year" class="form-select form-select-sm" style="width: auto;">
+                                {% for y in year_choices %}<option value="{{ y }}" {% if income_year == y|stringformat:'d' %}selected{% endif %}>{{ y }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-auto income-only-custom" style="{% if income_period != 'custom' %}display:none;{% endif %}">
+                            <label class="form-label small mb-0">From</label>
+                            <input type="date" name="income_from" class="form-control form-control-sm" value="{{ income_from }}" style="width: auto;">
+                        </div>
+                        <div class="col-auto income-only-custom" style="{% if income_period != 'custom' %}display:none;{% endif %}">
+                            <label class="form-label small mb-0">To</label>
+                            <input type="date" name="income_to" class="form-control form-control-sm" value="{{ income_to }}" style="width: auto;">
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-sm btn-crm-primary">Apply</button>
+                        </div>
+                    </div>
+                </form>
+                <div class="position-relative" style="height: 260px;">
+                    <canvas id="incomeChart" aria-label="Income by month"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card card-crm h-100">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    <h5 class="section-title mb-0">Sales</h5>
+                    <p class="section-subtitle mb-0">Buyer vs Seller vs Dual by month</p>
+                </div>
+                <span class="fw-600" style="color: var(--crm-pill-success-text);">{{ total_sales|usd:0 }}</span>
+            </div>
+            <div class="card-body">
+                <form method="get" action="{% url 'crm:home' %}" class="dashboard-chart-filter mb-3" data-chart="sales">
+                    <input type="hidden" name="income_period" value="{{ income_period }}">
+                    <input type="hidden" name="income_month" value="{{ income_month }}">
+                    <input type="hidden" name="income_year" value="{{ income_year }}">
+                    <input type="hidden" name="income_from" value="{{ income_from }}">
+                    <input type="hidden" name="income_to" value="{{ income_to }}">
+                    <div class="row g-2 align-items-end flex-wrap">
+                        <div class="col-auto">
+                            <label class="form-label small mb-0">Filter</label>
+                            <select name="sales_period" class="form-select form-select-sm" style="width: auto;">
+                                <option value="this_year" {% if sales_period == 'this_year' %}selected{% endif %}>This year</option>
+                                <option value="last_6" {% if sales_period == 'last_6' %}selected{% endif %}>Last 6 months</option>
+                                <option value="last_3" {% if sales_period == 'last_3' %}selected{% endif %}>Last 3 months</option>
+                                <option value="month" {% if sales_period == 'month' %}selected{% endif %}>Single month</option>
+                                <option value="custom" {% if sales_period == 'custom' %}selected{% endif %}>Date range</option>
+                            </select>
+                        </div>
+                        <div class="col-auto sales-only-month" style="{% if sales_period != 'month' %}display:none;{% endif %}">
+                            <label class="form-label small mb-0">Month</label>
+                            <select name="sales_month" class="form-select form-select-sm" style="width: auto;">
+                                {% for num, name in month_choices %}<option value="{{ num }}" {% if sales_month == num|stringformat:'d' %}selected{% endif %}>{{ name }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-auto sales-only-month" style="{% if sales_period != 'month' %}display:none;{% endif %}">
+                            <label class="form-label small mb-0">Year</label>
+                            <select name="sales_year" class="form-select form-select-sm" style="width: auto;">
+                                {% for y in year_choices %}<option value="{{ y }}" {% if sales_year == y|stringformat:'d' %}selected{% endif %}>{{ y }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-auto sales-only-custom" style="{% if sales_period != 'custom' %}display:none;{% endif %}">
+                            <label class="form-label small mb-0">From</label>
+                            <input type="date" name="sales_from" class="form-control form-control-sm" value="{{ sales_from }}" style="width: auto;">
+                        </div>
+                        <div class="col-auto sales-only-custom" style="{% if sales_period != 'custom' %}display:none;{% endif %}">
+                            <label class="form-label small mb-0">To</label>
+                            <input type="date" name="sales_to" class="form-control form-control-sm" value="{{ sales_to }}" style="width: auto;">
+                        </div>
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-sm btn-crm-primary">Apply</button>
+                        </div>
+                    </div>
+                </form>
+                <div class="position-relative" style="height: 260px;">
+                    <canvas id="salesChart" aria-label="Sales by month"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script id="dashboard-chart-data" type="application/json">{{ chart_data_json|safe }}</script>
+<script>
+(function() {
+  var data = JSON.parse(document.getElementById('dashboard-chart-data').textContent);
+  var incomeLabels = data.month_labels_income;
+  var salesLabels = data.month_labels_sales;
+  var colors = data.chart_colors || {};
+  var colorBuyer = (colors.buyer && colors.buyer.charAt(0) === '#') ? colors.buyer : '#1e4976';
+  var colorSeller = (colors.seller && colors.seller.charAt(0) === '#') ? colors.seller : '#137333';
+  var colorDual = (colors.dual && colors.dual.charAt(0) === '#') ? colors.dual : '#b45309';
+
+  var style = getComputedStyle(document.documentElement);
+  var border = style.getPropertyValue('--crm-border').trim() || '#e8eaed';
+  var muted = style.getPropertyValue('--crm-text-muted').trim() || '#5f6368';
+
+  var chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: true, position: 'top' }
+    },
+    scales: {
+      x: {
+        grid: { color: border },
+        ticks: { color: muted, font: { size: 11 } }
+      },
+      y: {
+        beginAtZero: true,
+        grid: { color: border },
+        ticks: { color: muted, font: { size: 11 }, callback: function(v) { return '$' + (v >= 1000 ? (v/1000) + 'K' : v); } }
+      }
+    }
+  };
+
+  if (document.getElementById('incomeChart')) {
+    new Chart(document.getElementById('incomeChart'), {
+      type: 'bar',
+      data: {
+        labels: incomeLabels,
+        datasets: [
+          { label: 'Buyer', data: data.income_by_month_buyer || [], backgroundColor: colorBuyer + '99', borderColor: colorBuyer, borderWidth: 1 },
+          { label: 'Seller', data: data.income_by_month_seller || [], backgroundColor: colorSeller + '99', borderColor: colorSeller, borderWidth: 1 },
+          { label: 'Dual', data: data.income_by_month_dual || [], backgroundColor: colorDual + '99', borderColor: colorDual, borderWidth: 1 }
+        ]
+      },
+      options: chartOptions
+    });
+  }
+
+  if (document.getElementById('salesChart')) {
+    new Chart(document.getElementById('salesChart'), {
+      type: 'bar',
+      data: {
+        labels: salesLabels,
+        datasets: [
+          { label: 'Buyer', data: data.sales_by_month_buyer || [], backgroundColor: colorBuyer + '99', borderColor: colorBuyer, borderWidth: 1 },
+          { label: 'Seller', data: data.sales_by_month_seller || [], backgroundColor: colorSeller + '99', borderColor: colorSeller, borderWidth: 1 },
+          { label: 'Dual', data: data.sales_by_month_dual || [], backgroundColor: colorDual + '99', borderColor: colorDual, borderWidth: 1 }
+        ]
+      },
+      options: chartOptions
+    });
+  }
+
+  // Toggle filter visibility when period changes
+  function setupFilterToggles(prefix) {
+    var periodSelect = document.querySelector('form[data-chart="' + prefix + '"] select[name="' + prefix + '_period"]');
+    if (!periodSelect) return;
+    var monthGroup = document.querySelectorAll('form[data-chart="' + prefix + '"] .' + prefix + '-only-month');
+    var customGroup = document.querySelectorAll('form[data-chart="' + prefix + '"] .' + prefix + '-only-custom');
+    function update() {
+      var v = periodSelect.value;
+      monthGroup.forEach(function(el) { el.style.display = v === 'month' ? '' : 'none'; });
+      customGroup.forEach(function(el) { el.style.display = v === 'custom' ? '' : 'none'; });
+    }
+    periodSelect.addEventListener('change', update);
+  }
+  setupFilterToggles('income');
+  setupFilterToggles('sales');
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends 'crm/base.html' %}
+{% block title %}Edit choice – Application Admin{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'crm:home' %}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'crm:app_admin' %}">Application Admin</a></li>
+        <li class="breadcrumb-item active">Edit choice</li>
+    </ol>
+</nav>
+
+<h1 class="page-title mb-4">Edit choice</h1>
+<div class="card card-crm">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+            <div class="mb-3">
+                <label class="form-label">List type</label>
+                <input type="text" class="form-control" value="{{ choice.get_list_type_display }}" disabled>
+                <p class="form-text small text-muted">Code and label can be edited below.</p>
+            </div>
+            <input type="hidden" name="list_type" value="{{ choice.list_type }}">
+            {% for field in form %}
+            {% if field.name != 'list_type' %}
+            <div class="mb-3">
+                <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<div class="invalid-feedback d-block">{{ field.errors.0 }}</div>{% endif %}
+            </div>
+            {% else %}
+            {{ field }}
+            {% endif %}
+            {% endfor %}
+            <button type="submit" class="btn btn-crm-primary">Save</button>
+            <a href="{% url 'crm:app_admin' %}#list-{{ choice.list_type }}" class="btn btn-outline-secondary">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

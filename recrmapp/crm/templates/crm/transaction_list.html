@@ -1,0 +1,110 @@
+{% extends 'crm/base.html' %}
+{% load crm_filters %}
+{% block title %}Transactions{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <h1 class="page-title mb-0">Transactions</h1>
+    <a href="{% url 'crm:transaction_add' %}" class="btn btn-crm-primary">
+        <i class="bi bi-plus-lg me-1"></i> Add Transaction
+    </a>
+</div>
+
+<div class="card card-crm mb-4">
+    <div class="card-body">
+        <form method="get" action="{% url 'crm:transaction_list' %}" class="row g-3 align-items-end">
+            <div class="col-12 col-md-4 col-lg-3">
+                <label for="transaction-q" class="form-label small text-muted">Search</label>
+                <input type="text" name="q" id="transaction-q" class="form-control form-control-sm" placeholder="Property, address, file #, MLS…#" value="{{ current_q }}">
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+                <label for="transaction-status" class="form-label small text-muted">Status</label>
+                <select name="status" id="transaction-status" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    {% for value, label in transaction_status_choices %}
+                    <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+                <label for="transaction-representation" class="form-label small text-muted">Representation</label>
+                <select name="representation" id="transaction-representation" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    {% for value, label in transaction_representation_choices %}
+                    <option value="{{ value }}" {% if current_representation == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-md-auto">
+                <button type="submit" class="btn btn-sm btn-crm-primary"><i class="bi bi-search me-1"></i> Filter</button>
+                <a href="{% url 'crm:transaction_list' %}" class="btn btn-sm btn-outline-secondary">Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card card-crm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-crm align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Property</th>
+                        <th>Status</th>
+                        <th>Representation</th>
+                        <th>Commission</th>
+                        <th>Final price</th>
+                        <th>GCI</th>
+                        <th>Listing date</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in transactions %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'crm:transaction_detail' t.pk %}" class="text-decoration-none fw-600 text-dark">
+                                {{ t.property.title|default:t.property.address }}
+                            </a>
+                            <br><span class="text-muted small">{{ t.property.address|truncatewords:4 }}, {{ t.property.city }}</span>
+                        </td>
+                        <td><span class="pill pill-primary">{{ choice_labels.transaction_status|get_item:t.status }}</span></td>
+                        <td><span class="pill pill-neutral">{{ choice_labels.transaction_representation|get_item:t.representation }}</span></td>
+                        <td class="text-muted">{% if t.commission_percentage %}{{ t.commission_percentage }}%{% else %}—{% endif %}</td>
+                        <td class="text-muted">{% if t.final_sales_price %}{{ t.final_sales_price|usd }}{% else %}—{% endif %}</td>
+                        <td class="text-muted">{% if t.gci %}{{ t.gci|usd:2 }}{% else %}—{% endif %}</td>
+                        <td class="text-muted">{{ t.listing_date|date:"M j, Y"|default:"—" }}</td>
+                        <td class="text-end">
+                            <a href="{% url 'crm:transaction_detail' t.pk %}" class="btn btn-sm btn-outline-secondary">View</a>
+                            <a href="{% url 'crm:transaction_edit' t.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                            <a href="{% url 'crm:transaction_delete' t.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-5">
+                            No transactions yet. <a href="{% url 'crm:transaction_add' %}" class="text-decoration-none fw-500">Add your first transaction</a>.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer bg-light border-top border-secondary border-opacity-10 py-2">
+        <nav class="d-flex justify-content-center">
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?{% if pagination_querystring %}{{ pagination_querystring }}&{% endif %}page={{ page_obj.previous_page_number }}">Previous</a></li>
+                {% endif %}
+                <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?{% if pagination_querystring %}{{ pagination_querystring }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

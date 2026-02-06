@@ -1,0 +1,121 @@
+{% extends 'crm/base.html' %}
+{% load crm_filters %}
+{% block title %}Leads{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <h1 class="page-title mb-0">Leads</h1>
+    <div class="d-flex align-items-center gap-2">
+        {% if show_all %}
+        <a href="{% url 'crm:lead_list' %}{% if querystring_without_show_all %}?{{ querystring_without_show_all }}{% endif %}" class="btn btn-outline-secondary btn-sm">Show active only</a>
+        {% else %}
+        <a href="{% url 'crm:lead_list' %}?show_all=1{% if pagination_querystring %}&{{ pagination_querystring }}{% endif %}" class="btn btn-outline-secondary btn-sm">Show all</a>
+        {% endif %}
+        <a href="{% url 'crm:lead_add' %}" class="btn btn-crm-primary">
+            <i class="bi bi-plus-lg me-1"></i> Add Lead
+        </a>
+    </div>
+</div>
+
+<div class="card card-crm mb-4">
+    <div class="card-body">
+        <form method="get" action="{% url 'crm:lead_list' %}" class="row g-3 align-items-end">
+            {% if show_all %}<input type="hidden" name="show_all" value="1">{% endif %}
+            <div class="col-12 col-md-4 col-lg-3">
+                <label for="lead-q" class="form-label small text-muted">Search</label>
+                <input type="text" name="q" id="lead-q" class="form-control form-control-sm" placeholder="Name, email, phone, city…" value="{{ current_q }}">
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+                <label for="lead-status" class="form-label small text-muted">Status</label>
+                <select name="status" id="lead-status" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    {% for value, label in lead_status_choices %}
+                    <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+                <label for="lead-referral" class="form-label small text-muted">Referral</label>
+                <select name="referral" id="lead-referral" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    {% for value, label in lead_referral_choices %}
+                    <option value="{{ value }}" {% if current_referral == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-md-auto">
+                <button type="submit" class="btn btn-sm btn-crm-primary"><i class="bi bi-search me-1"></i> Filter</button>
+                <a href="{% url 'crm:lead_list' %}{% if show_all %}?show_all=1{% endif %}" class="btn btn-sm btn-outline-secondary">Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card card-crm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-crm align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Status</th>
+                        <th>Referral</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>City</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for lead in leads %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'crm:lead_detail' lead.pk %}" class="text-decoration-none fw-600 text-dark">
+                                {{ lead.full_name }}
+                            </a>
+                            {% if lead.is_converted %}<span class="pill pill-success ms-1">Converted</span>{% endif %}
+                        </td>
+                        <td><span class="pill pill-neutral">{{ choice_labels.lead_status|get_item:lead.status }}</span></td>
+                        <td class="text-muted">{% if lead.referral %}{{ choice_labels.lead_referral|get_item:lead.referral }}{% else %}—{% endif %}</td>
+                        <td class="text-muted">{{ lead.email|default:"—" }}</td>
+                        <td class="text-muted">{{ lead.phone|default:"—" }}</td>
+                        <td class="text-muted">{{ lead.city|default:"—" }}</td>
+                        <td class="text-end">
+                            <a href="{% url 'crm:lead_detail' lead.pk %}" class="btn btn-sm btn-outline-secondary">View</a>
+                            <a href="{% url 'crm:lead_edit' lead.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                            {% if not lead.is_converted %}
+                            <a href="{% url 'crm:lead_convert' lead.pk %}" class="btn btn-sm btn-crm-primary">Convert</a>
+                            {% else %}
+                            <a href="{% url 'crm:client_detail' lead.converted_to_client.pk %}" class="btn btn-sm btn-outline-secondary">View Client</a>
+                            {% endif %}
+                            <a href="{% url 'crm:lead_delete' lead.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-5">
+                            No leads yet. <a href="{% url 'crm:lead_add' %}" class="text-decoration-none fw-500">Add your first lead</a>.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer bg-light border-top border-secondary border-opacity-10 py-2">
+        <nav class="d-flex justify-content-center">
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?{% if pagination_querystring %}{{ pagination_querystring }}&{% endif %}page={{ page_obj.previous_page_number }}">Previous</a></li>
+                {% endif %}
+                <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?{% if pagination_querystring %}{{ pagination_querystring }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

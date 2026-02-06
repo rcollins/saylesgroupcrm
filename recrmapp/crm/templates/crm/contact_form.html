@@ -1,0 +1,98 @@
+{% extends 'crm/base.html' %}
+{% block title %}{% if object %}Edit {{ object.full_name }}{% else %}Add Contact{% endif %}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'crm:contact_list' %}">Contacts</a></li>
+        <li class="breadcrumb-item active">{% if object %}Edit{% else %}Add{% endif %}</li>
+    </ol>
+</nav>
+
+<h1 class="page-title mb-4">{% if object %}Edit Contact{% else %}Add Contact{% endif %}</h1>
+
+<form method="post" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="card card-crm mb-4">
+        <div class="card-header">
+            <h5 class="mb-0 section-title">Primary Information</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="id_first_name" class="form-label">First name</label>
+                    <input type="text" name="first_name" value="{{ form.first_name.value|default:'' }}" class="form-control {% if form.first_name.errors %}is-invalid{% endif %}" id="id_first_name" required>
+                    {% if form.first_name.errors %}<div class="invalid-feedback">{{ form.first_name.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label for="id_last_name" class="form-label">Last name</label>
+                    <input type="text" name="last_name" value="{{ form.last_name.value|default:'' }}" class="form-control {% if form.last_name.errors %}is-invalid{% endif %}" id="id_last_name" required>
+                    {% if form.last_name.errors %}<div class="invalid-feedback">{{ form.last_name.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label for="id_email" class="form-label">Email</label>
+                    {{ form.email }}
+                    {% if form.email.errors %}<div class="invalid-feedback d-block">{{ form.email.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label for="id_phone" class="form-label">Phone</label>
+                    {{ form.phone }}
+                </div>
+                <div class="col-md-6">
+                    <label for="id_contact_type" class="form-label">Contact type</label>
+                    {{ form.contact_type }}
+                </div>
+                <div class="col-md-6">
+                    <label for="id_company" class="form-label">Company</label>
+                    {{ form.company }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-crm mb-4">
+        <div class="card-header">
+            <h5 class="mb-0 section-title">Address</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label for="id_address" class="form-label">Street address</label>
+                    {{ form.address }}
+                </div>
+                <div class="col-md-4">
+                    <label for="id_city" class="form-label">City</label>
+                    {{ form.city }}
+                </div>
+                <div class="col-md-4">
+                    <label for="id_state" class="form-label">State</label>
+                    {{ form.state }}
+                </div>
+                <div class="col-md-4">
+                    <label for="id_zip_code" class="form-label">Zip</label>
+                    {{ form.zip_code }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-crm mb-4">
+        <div class="card-header">
+            <h5 class="mb-0 section-title">Notes</h5>
+        </div>
+        <div class="card-body">
+            <label for="id_notes" class="form-label">Notes</label>
+            {{ form.notes }}
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <button type="submit" class="btn btn-crm-primary">Save Contact</button>
+        <a href="{% url 'crm:contact_list' %}" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+</form>
+{% endblock %}

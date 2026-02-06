@@ -1,0 +1,108 @@
+{% extends 'crm/base.html' %}
+{% load crm_filters %}
+{% block title %}{{ contact.full_name }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'crm:contact_list' %}">Contacts</a></li>
+        <li class="breadcrumb-item active">{{ contact.full_name }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4">
+    <div>
+        <h1 class="page-title mb-1">{{ contact.full_name }}</h1>
+        <span class="pill pill-neutral">{{ choice_labels.contact_type|get_item:contact.contact_type }}</span>
+        {% if contact.company %}<span class="pill pill-primary">{{ contact.company }}</span>{% endif %}
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'crm:contact_edit' contact.pk %}" class="btn btn-crm-primary">Edit Contact</a>
+        <a href="{% url 'crm:contact_delete' contact.pk %}" class="btn btn-outline-danger">Delete</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card card-crm mb-4">
+            <div class="card-header">
+                <h5 class="mb-0 section-title">Contact Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="text-muted small">Email</label>
+                        <p class="mb-0">{{ contact.email|default:"—" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted small">Phone</label>
+                        <p class="mb-0">{{ contact.phone|default:"—" }}</p>
+                    </div>
+                    {% if contact.company %}
+                    <div class="col-12">
+                        <label class="text-muted small">Company</label>
+                        <p class="mb-0">{{ contact.company }}</p>
+                    </div>
+                    {% endif %}
+                    <div class="col-12">
+                        <label class="text-muted small">Address</label>
+                        <p class="mb-0">
+                            {% if contact.address %}
+                                {{ contact.address }}{% if contact.city %}, {{ contact.city }}{% endif %}
+                                {% if contact.state %}, {{ contact.state }}{% endif %}
+                                {% if contact.zip_code %} {{ contact.zip_code }}{% endif %}
+                            {% else %}—{% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if contact.notes %}
+        <div class="card card-crm mb-4">
+            <div class="card-header">
+                <h5 class="mb-0 section-title">General notes</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-0">{{ contact.notes }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card card-crm mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h5 class="mb-0 section-title">Additional notes</h5>
+                <span class="section-subtitle mb-0">Newest first</span>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'crm:contact_add_note' contact.pk %}" class="mb-4">
+                    {% csrf_token %}
+                    <label for="id_body" class="form-label visually-hidden">Add note</label>
+                    <div class="input-group">
+                        <textarea name="body" id="id_body" class="form-control" rows="2" placeholder="Add a note…" required></textarea>
+                        <button type="submit" class="btn btn-crm-primary">Add note</button>
+                    </div>
+                </form>
+                {% if contact.additional_notes.all %}
+                <ul class="list-group list-group-crm list-group-flush">
+                    {% for note in contact.additional_notes.all %}
+                    <li class="list-group-item px-0">
+                        <p class="mb-1">{{ note.body }}</p>
+                        <small class="text-muted">{{ note.created_at|date:"M j, Y" }} at {{ note.created_at|time:"g:i A" }}</small>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted small mb-0">No additional notes yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card card-crm mb-4">
+            <div class="card-footer bg-transparent text-muted small border-top border-secondary border-opacity-10">
+                Created {{ contact.created_at|date:"M j, Y" }} · Updated {{ contact.updated_at|date:"M j, Y" }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

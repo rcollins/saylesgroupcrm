@@ -1,0 +1,107 @@
+{% extends 'crm/base.html' %}
+{% load crm_filters %}
+{% block title %}Clients{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <h1 class="page-title mb-0">Clients</h1>
+    <a href="{% url 'crm:client_add' %}" class="btn btn-crm-primary">
+        <i class="bi bi-plus-lg me-1"></i> Add Client
+    </a>
+</div>
+
+<div class="card card-crm mb-4">
+    <div class="card-body">
+        <form method="get" action="{% url 'crm:client_list' %}" class="row g-3 align-items-end">
+            <div class="col-12 col-md-4 col-lg-3">
+                <label for="client-q" class="form-label small text-muted">Search</label>
+                <input type="text" name="q" id="client-q" class="form-control form-control-sm" placeholder="Name, email, phone, city…" value="{{ current_q }}">
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+                <label for="client-type" class="form-label small text-muted">Type</label>
+                <select name="client_type" id="client-type" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    {% for value, label in client_type_choices %}
+                    <option value="{{ value }}" {% if current_client_type == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+                <label for="client-status" class="form-label small text-muted">Status</label>
+                <select name="status" id="client-status" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    {% for value, label in client_status_choices %}
+                    <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-12 col-md-auto">
+                <button type="submit" class="btn btn-sm btn-crm-primary"><i class="bi bi-search me-1"></i> Filter</button>
+                <a href="{% url 'crm:client_list' %}" class="btn btn-sm btn-outline-secondary">Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card card-crm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-crm align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>City</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for client in clients %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'crm:client_detail' client.pk %}" class="text-decoration-none fw-600 text-dark">
+                                {{ client.full_name }}
+                            </a>
+                        </td>
+                        <td><span class="pill pill-neutral">{{ choice_labels.client_type|get_item:client.client_type }}</span></td>
+                        <td><span class="pill pill-primary">{{ choice_labels.client_status|get_item:client.status }}</span></td>
+                        <td class="text-muted">{{ client.email|default:"—" }}</td>
+                        <td class="text-muted">{{ client.phone|default:"—" }}</td>
+                        <td class="text-muted">{{ client.city|default:"—" }}</td>
+                        <td class="text-end">
+                            <a href="{% url 'crm:client_detail' client.pk %}" class="btn btn-sm btn-outline-secondary">View</a>
+                            <a href="{% url 'crm:client_edit' client.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
+                            <a href="{% url 'crm:client_delete' client.pk %}" class="btn btn-sm btn-outline-danger">Delete</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-5">
+                            No clients yet. <a href="{% url 'crm:client_add' %}" class="text-decoration-none fw-500">Add your first client</a>.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% if page_obj.has_other_pages %}
+    <div class="card-footer bg-light border-top border-secondary border-opacity-10 py-2">
+        <nav class="d-flex justify-content-center">
+            <ul class="pagination pagination-sm mb-0">
+                {% if page_obj.has_previous %}
+                <li class="page-item"><a class="page-link" href="?{% if pagination_querystring %}{{ pagination_querystring }}&{% endif %}page={{ page_obj.previous_page_number }}">Previous</a></li>
+                {% endif %}
+                <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+                {% if page_obj.has_next %}
+                <li class="page-item"><a class="page-link" href="?{% if pagination_querystring %}{{ pagination_querystring }}&{% endif %}page={{ page_obj.next_page_number }}">Next</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

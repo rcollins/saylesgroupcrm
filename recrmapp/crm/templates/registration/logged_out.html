@@ -1,0 +1,15 @@
+{% extends 'crm/base.html' %}
+{% block title %}Logged out{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5 col-lg-4">
+        <div class="card card-crm">
+            <div class="card-body text-center py-5">
+                <p class="mb-3">You have been logged out.</p>
+                <a href="{% url 'login' %}" class="btn btn-crm-primary">Log in again</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,227 @@
+{% extends 'crm/base.html' %}
+{% load crm_filters %}
+{% block title %}{{ property.title }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'crm:property_list' %}">Properties</a></li>
+        <li class="breadcrumb-item active">{{ property.title }}</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4">
+    <div>
+        <h1 class="page-title mb-1">{{ property.title }}</h1>
+        <span class="pill pill-neutral">{{ property.get_property_type_display }}</span>
+        <span class="pill pill-primary">{{ property.get_status_display }}</span>
+        {% if property.featured %}<span class="pill pill-success">Featured</span>{% endif %}
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'crm:property_edit' property.pk %}" class="btn btn-crm-primary">Edit Property</a>
+        <a href="{% url 'crm:property_delete' property.pk %}" class="btn btn-outline-danger">Delete</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        {% if property.photo or property.photos.exists %}
+        <div class="card card-crm mb-4 overflow-hidden">
+            {% if property.photo %}
+            <img src="{{ property.photo.url }}" class="card-img-top" alt="{{ property.title }}" style="max-height: 400px; object-fit: cover;">
+            {% elif property.photos.first %}
+            <img src="{{ property.photos.first.image.url }}" class="card-img-top" alt="{{ property.title }}" style="max-height: 400px; object-fit: cover;">
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if property.photo or property.photos.exists %}
+        <div class="card card-crm mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h5 class="mb-0 section-title">Photos</h5>
+                <span class="section-subtitle mb-0">Add or remove photos</span>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'crm:property_add_photos' property.pk %}" enctype="multipart/form-data" class="mb-4">
+                    {% csrf_token %}
+                    <label for="id_property_images" class="form-label">Add photos</label>
+                    <div class="d-flex flex-wrap align-items-end gap-2">
+                        <input type="file" name="images" id="id_property_images" class="form-control" accept="image/*" multiple style="max-width: 280px;">
+                        <button type="submit" class="btn btn-crm-primary">Upload</button>
+                    </div>
+                </form>
+                <div class="row g-2">
+                    {% if property.photo %}
+                    <div class="col-6 col-md-4 col-lg-3">
+                        <div class="position-relative rounded overflow-hidden border" style="aspect-ratio: 1; background: var(--crm-pill-neutral);">
+                            <img src="{{ property.photo.url }}" alt="Main" class="w-100 h-100" style="object-fit: cover;">
+                            <span class="position-absolute top-0 start-0 m-1 badge bg-primary">Main</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% for photo in property.photos.all %}
+                    <div class="col-6 col-md-4 col-lg-3">
+                        <div class="position-relative rounded overflow-hidden border" style="aspect-ratio: 1; background: var(--crm-pill-neutral);">
+                            <img src="{{ photo.image.url }}" alt="Photo {{ forloop.counter }}" class="w-100 h-100" style="object-fit: cover;">
+                            <form method="post" action="{% url 'crm:property_delete_photo' property.pk photo.pk %}" class="position-absolute bottom-0 end-0 m-1" onsubmit="return confirm('Remove this photo?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-danger" title="Remove photo"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card card-crm mb-4">
+            <div class="card-header">
+                <h5 class="mb-0 section-title">Photos</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'crm:property_add_photos' property.pk %}" enctype="multipart/form-data" class="mb-3">
+                    {% csrf_token %}
+                    <label for="id_property_images" class="form-label">Add photos</label>
+                    <div class="d-flex flex-wrap align-items-end gap-2">
+                        <input type="file" name="images" id="id_property_images" class="form-control" accept="image/*" multiple style="max-width: 280px;">
+                        <button type="submit" class="btn btn-crm-primary">Upload</button>
+                    </div>
+                </form>
+                <p class="text-muted small mb-0">No photos yet. You can also set a main photo in Edit Property.</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card card-crm mb-4">
+            <div class="card-header">
+                <h5 class="mb-0 section-title">Address</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-0">{{ property.address }}, {{ property.city }}, {{ property.state }} {{ property.zip_code }}</p>
+            </div>
+        </div>
+
+        <div class="card card-crm mb-4">
+            <div class="card-header">
+                <h5 class="mb-0 section-title">Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="text-muted small">Price</label>
+                        <p class="mb-0">{% if property.price %}{{ property.price|usd:2 }}{% else %}—{% endif %}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="text-muted small">Bedrooms</label>
+                        <p class="mb-0">{{ property.bedrooms|default:"—" }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="text-muted small">Bathrooms</label>
+                        <p class="mb-0">{{ property.bathrooms|default:"—" }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="text-muted small">Square feet</label>
+                        <p class="mb-0">{{ property.square_feet|default:"—" }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="text-muted small">Lot size</label>
+                        <p class="mb-0">{{ property.lot_size|default:"—" }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="text-muted small">Year built</label>
+                        <p class="mb-0">{{ property.year_built|default:"—" }}</p>
+                    </div>
+                    {% if property.mls_number or property.mls_service or property.mls_url %}
+                    <div class="col-12 pt-2">
+                        <label class="text-muted small">MLS</label>
+                        <p class="mb-0">
+                            {% if property.mls_number %}{{ property.mls_number }}{% endif %}
+                            {% if property.mls_service %} ({{ property.get_mls_service_display }}){% endif %}
+                            {% if property.mls_url %} · <a href="{{ property.mls_url }}" target="_blank" rel="noopener">View listing</a>{% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% if property.description %}
+        <div class="card card-crm mb-4">
+            <div class="card-header">
+                <h5 class="mb-0 section-title">Description</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-0">{{ property.description }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if property.features %}
+        <div class="card card-crm mb-4">
+            <div class="card-header">
+                <h5 class="mb-0 section-title">Features</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-0">{{ property.features }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card card-crm mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h5 class="mb-0 section-title">Additional notes</h5>
+                <span class="section-subtitle mb-0">Newest first</span>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'crm:property_add_note' property.pk %}" class="mb-4">
+                    {% csrf_token %}
+                    <label for="id_body" class="form-label visually-hidden">Add note</label>
+                    <div class="input-group">
+                        <textarea name="body" id="id_body" class="form-control" rows="2" placeholder="Add a note…" required></textarea>
+                        <button type="submit" class="btn btn-crm-primary">Add note</button>
+                    </div>
+                </form>
+                {% if property.additional_notes.all %}
+                <ul class="list-group list-group-crm list-group-flush">
+                    {% for note in property.additional_notes.all %}
+                    <li class="list-group-item px-0">
+                        <p class="mb-1">{{ note.body }}</p>
+                        <small class="text-muted">{{ note.created_at|date:"M j, Y" }} at {{ note.created_at|time:"g:i A" }}</small>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted small mb-0">No additional notes yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card card-crm mb-4">
+            <div class="card-footer bg-transparent text-muted small border-top border-secondary border-opacity-10">
+                Created {{ property.created_at|date:"M j, Y" }} · Updated {{ property.updated_at|date:"M j, Y" }}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card card-crm">
+            <div class="card-header">
+                <h5 class="mb-0 section-title">Owner / Client</h5>
+            </div>
+            <div class="card-body">
+                {% if property.owner %}
+                <p class="mb-2">
+                    <a href="{% url 'crm:client_detail' property.owner.pk %}">{{ property.owner.full_name }}</a>
+                </p>
+                {% if property.owner.phone %}<p class="text-muted small mb-0">{{ property.owner.phone }}</p>{% endif %}
+                {% if property.owner.email %}<p class="text-muted small mb-0">{{ property.owner.email }}</p>{% endif %}
+                {% else %}
+                <p class="text-muted small mb-0">No owner linked.</p>
+                <a href="{% url 'crm:property_edit' property.pk %}" class="btn btn-sm btn-outline-primary mt-2">Link Owner</a>
+                {% endif %}
+                <hr class="my-3">
+                <a href="{% url 'crm:transaction_add' %}?property={{ property.pk }}" class="btn btn-sm btn-crm-primary w-100"><i class="bi bi-journal-text me-1"></i> Start transaction</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

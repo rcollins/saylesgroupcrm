@@ -1,0 +1,165 @@
+{% extends 'crm/base.html' %}
+{% block title %}{% if object %}Edit Property{% else %}Add Property{% endif %}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'crm:property_list' %}">Properties</a></li>
+        <li class="breadcrumb-item active">{% if object %}Edit{% else %}Add{% endif %}</li>
+    </ol>
+</nav>
+
+<h1 class="page-title mb-4">{% if object %}Edit Property{% else %}Add Property{% endif %}</h1>
+
+<form method="post" novalidate enctype="multipart/form-data">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="card card-crm mb-4">
+        <div class="card-header">
+            <h5 class="mb-0 section-title">Basic Info</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label for="id_title" class="form-label">Title</label>
+                    {{ form.title }}
+                    {% if form.title.errors %}<div class="invalid-feedback d-block">{{ form.title.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="col-md-6">
+                    <label for="id_property_type" class="form-label">Type</label>
+                    {{ form.property_type }}
+                </div>
+                <div class="col-md-6">
+                    <label for="id_status" class="form-label">Status</label>
+                    {{ form.status }}
+                </div>
+                <div class="col-md-6">
+                    <label for="id_owner" class="form-label">Owner / Client</label>
+                    {{ form.owner }}
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <div class="form-check">
+                        {{ form.featured }}
+                        <label class="form-check-label" for="id_featured">Featured</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-crm mb-4">
+        <div class="card-header">
+            <h5 class="mb-0 section-title">Address</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label for="id_address" class="form-label">Street address</label>
+                    {{ form.address }}
+                    {% if form.address.errors %}<div class="invalid-feedback d-block">{{ form.address.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label for="id_city" class="form-label">City</label>
+                    {{ form.city }}
+                    {% if form.city.errors %}<div class="invalid-feedback d-block">{{ form.city.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label for="id_state" class="form-label">State</label>
+                    {{ form.state }}
+                </div>
+                <div class="col-md-4">
+                    <label for="id_zip_code" class="form-label">Zip</label>
+                    {{ form.zip_code }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-crm mb-4">
+        <div class="card-header">
+            <h5 class="mb-0 section-title">Property Details</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="id_price" class="form-label">Price</label>
+                    {{ form.price }}
+                </div>
+                <div class="col-md-3">
+                    <label for="id_bedrooms" class="form-label">Bedrooms</label>
+                    {{ form.bedrooms }}
+                </div>
+                <div class="col-md-3">
+                    <label for="id_bathrooms" class="form-label">Bathrooms</label>
+                    {{ form.bathrooms }}
+                </div>
+                <div class="col-md-4">
+                    <label for="id_square_feet" class="form-label">Square feet</label>
+                    {{ form.square_feet }}
+                </div>
+                <div class="col-md-4">
+                    <label for="id_lot_size" class="form-label">Lot size</label>
+                    {{ form.lot_size }}
+                </div>
+                <div class="col-md-4">
+                    <label for="id_year_built" class="form-label">Year built</label>
+                    {{ form.year_built }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-crm mb-4">
+        <div class="card-header">
+            <h5 class="mb-0 section-title">MLS</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="id_mls_number" class="form-label">MLS number</label>
+                    {{ form.mls_number }}
+                </div>
+                <div class="col-md-4">
+                    <label for="id_mls_service" class="form-label">MLS service</label>
+                    {{ form.mls_service }}
+                </div>
+                <div class="col-md-4">
+                    <label for="id_mls_url" class="form-label">MLS URL</label>
+                    {{ form.mls_url }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-crm mb-4">
+        <div class="card-header">
+            <h5 class="mb-0 section-title">Photo & Description</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label for="id_photo" class="form-label">Main photo</label>
+                    {{ form.photo }}
+                    {% if object and object.photo %}<p class="form-text">Current: <a href="{{ object.photo.url }}" target="_blank">{{ object.photo.name }}</a></p>{% endif %}
+                </div>
+                <div class="col-12">
+                    <label for="id_description" class="form-label">Description</label>
+                    {{ form.description }}
+                </div>
+                <div class="col-12">
+                    <label for="id_features" class="form-label">Features</label>
+                    {{ form.features }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <button type="submit" class="btn btn-crm-primary">Save Property</button>
+        <a href="{% url 'crm:property_list' %}" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+</form>
+{% endblock %}

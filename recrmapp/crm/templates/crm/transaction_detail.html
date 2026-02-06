@@ -1,0 +1,317 @@
+{% extends 'crm/base.html' %}
+{% load crm_filters %}
+{% block title %}Transaction – {{ transaction.property.title }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'crm:transaction_list' %}">Transactions</a></li>
+        <li class="breadcrumb-item active">{{ transaction.property.title }}</li>
+    </ol>
+</nav>
+
+<div class="row g-4">
+    {# Left: Property + transaction details #}
+    <div class="col-lg-4">
+        <div class="card card-crm mb-3 overflow-hidden">
+            {% if transaction.property.photo %}
+            <img src="{{ transaction.property.photo.url }}" class="card-img-top" alt="{{ transaction.property.title }}" style="max-height: 220px; object-fit: cover;">
+            {% else %}
+            <div class="bg-light d-flex align-items-center justify-content-center" style="height: 140px;">
+                <i class="bi bi-house-door display-4 text-muted"></i>
+            </div>
+            {% endif %}
+            <div class="card-body">
+                <span class="pill pill-success mb-2">{{ choice_labels.transaction_status|get_item:transaction.status }}</span>
+                <h2 class="h5 fw-600 mb-1">{{ transaction.property.title }}</h2>
+                <p class="text-muted small mb-1">{{ transaction.property.address }}, {{ transaction.property.city }} {{ transaction.property.state }} {{ transaction.property.zip_code }}</p>
+                {% if transaction.property.price %}
+                <p class="fw-600 mb-1">{{ transaction.property.price|usd }}</p>
+                {% endif %}
+                <p class="text-muted small mb-0">
+                    {{ transaction.property.bedrooms|default:"—" }} bed {{ transaction.property.bathrooms|default:"—" }} bath
+                    {% if transaction.property.square_feet %}{{ transaction.property.square_feet }} sqft{% endif %}
+                </p>
+                {% if transaction.listing_date %}
+                <p class="text-muted small mb-0">Listed {{ transaction.listing_date|date:"F j, Y" }}</p>
+                {% endif %}
+                {% if transaction.property.mls_number %}
+                <p class="text-muted small mb-0">MLS ID {{ transaction.property.mls_number }}</p>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card card-crm mb-3">
+            <div class="card-body">
+                <p class="mb-2"><span class="text-muted small">Representation</span><br><span class="pill pill-success">{{ choice_labels.transaction_representation|get_item:transaction.representation }}</span></p>
+                {% if transaction.commission_percentage %}
+                <p class="mb-2"><span class="text-muted small">Commission</span><br>{{ transaction.commission_percentage }}%</p>
+                {% endif %}
+                {% if transaction.final_sales_price %}
+                <p class="mb-2"><span class="text-muted small">Final sales price</span><br>{{ transaction.final_sales_price|usd }}</p>
+                {% endif %}
+                {% if transaction.gci %}
+                <p class="mb-2"><span class="text-muted small">GCI</span><br><span class="fw-600">{{ transaction.gci|usd:2 }}</span></p>
+                {% endif %}
+                {% if transaction.file_number %}
+                <p class="mb-2"><span class="text-muted small">File number</span><br>{{ transaction.file_number }}</p>
+                {% endif %}
+                {% if transaction.lockbox_code %}
+                <p class="mb-2"><span class="text-muted small">Lockbox</span><br>{{ transaction.lockbox_code }}</p>
+                {% endif %}
+                {% if transaction.showing_instructions %}
+                <p class="mb-0"><span class="text-muted small">Showing instructions</span><br>{{ transaction.showing_instructions }}</p>
+                {% endif %}
+            </div>
+        </div>
+        <div class="d-flex flex-column gap-2">
+            <a href="{% url 'crm:transaction_edit' transaction.pk %}" class="btn btn-crm-primary"><i class="bi bi-pencil me-1"></i> Edit Transaction</a>
+            {% if transaction.property.mls_url %}
+            <a href="{{ transaction.property.mls_url }}" target="_blank" rel="noopener" class="btn btn-outline-secondary"><i class="bi bi-box-arrow-up-right me-1"></i> Open listing</a>
+            {% endif %}
+            <a href="{% url 'crm:transaction_delete' transaction.pk %}" class="btn btn-outline-danger"><i class="bi bi-trash me-1"></i> Delete Transaction</a>
+        </div>
+    </div>
+
+    {# Center: Tabs – Notes, Parties, Tasks #}
+    <div class="col-lg-5">
+        <ul class="nav nav-tabs nav-tabs-crm mb-3" id="transactionTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes" type="button" role="tab"><i class="bi bi-journal-text me-1"></i> Notes</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="parties-tab" data-bs-toggle="tab" data-bs-target="#parties" type="button" role="tab"><i class="bi bi-people me-1"></i> Parties</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="tasks-tab" data-bs-toggle="tab" data-bs-target="#tasks" type="button" role="tab"><i class="bi bi-check2-square me-1"></i> Tasks</button>
+            </li>
+        </ul>
+        <div class="tab-content" id="transactionTabContent">
+            {# Notes tab #}
+            <div class="tab-pane fade" id="notes" role="tabpanel">
+                <div class="card card-crm">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 section-title">Notes</h5>
+                        <span class="section-subtitle mb-0">Date/time stamped</span>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" action="{% url 'crm:transaction_add_note' transaction.pk %}" class="mb-4">
+                            {% csrf_token %}
+                            <label for="id_body" class="form-label visually-hidden">Add note</label>
+                            <div class="input-group">
+                                <textarea name="body" id="id_body" class="form-control" rows="2" placeholder="Leave a message…" required></textarea>
+                                <button type="submit" class="btn btn-crm-primary">Add note</button>
+                            </div>
+                        </form>
+                        {% if transaction.notes.all %}
+                        <ul class="list-group list-group-crm list-group-flush">
+                            {% for note in transaction.notes.all %}
+                            <li class="list-group-item px-0">
+                                <p class="mb-1">{{ note.body }}</p>
+                                <small class="text-muted">{{ note.created_at|date:"M j, Y" }} at {{ note.created_at|time:"g:i A" }}</small>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-muted small mb-0">No notes yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {# Parties tab #}
+            <div class="tab-pane fade show active" id="parties" role="tabpanel">
+                <div class="card card-crm">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <h5 class="mb-0 section-title">Transaction Parties</h5>
+                        <button type="button" class="btn btn-crm-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#addPartyForm"><i class="bi bi-plus-lg me-1"></i> Add Party</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="collapse mb-4" id="addPartyForm">
+                            <form method="post" action="{% url 'crm:transaction_add_party' transaction.pk %}">
+                                {% csrf_token %}
+                                <div class="row g-2">
+                                    <div class="col-md-6">
+                                        <label for="id_client" class="form-label small">Client (optional)</label>
+                                        {{ party_form.client }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="id_role" class="form-label small">Role</label>
+                                        {{ party_form.role }}
+                                    </div>
+                                    <div class="col-12">
+                                        <label for="id_display_name" class="form-label small">Name (if not a client)</label>
+                                        {{ party_form.display_name }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="id_email" class="form-label small">Email</label>
+                                        {{ party_form.email }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="id_phone" class="form-label small">Phone</label>
+                                        {{ party_form.phone }}
+                                    </div>
+                                    <div class="col-12">
+                                        <button type="submit" class="btn btn-crm-primary btn-sm">Add Party</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        {% if transaction.parties.all %}
+                        <ul class="list-group list-group-crm list-group-flush">
+                            {% for party in transaction.parties.all %}
+                            <li class="list-group-item px-0 d-flex align-items-start gap-2">
+                                <span class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center flex-shrink-0" style="width: 2.25rem; height: 2.25rem; font-size: 0.7rem;">
+                                    {% if party.client %}{{ party.client.first_name|slice:":1" }}{{ party.client.last_name|slice:":1" }}{% else %}{{ party.display_name|slice:":2"|upper }}{% endif %}
+                                </span>
+                                <div class="flex-grow-1 min-w-0">
+                                    <span class="fw-600">{{ party.full_name }}</span>
+                                    {% if party.display_phone != "—" %}<span class="text-muted small d-block">{{ party.display_phone }}</span>{% endif %}
+                                    <span class="pill {% if party.role == 'primary_buyer' %}pill-success{% elif party.role == 'primary_seller' %}pill-seller{% else %}pill-neutral{% endif %} mt-1">{{ party.get_role_display }}</span>
+                                </div>
+                                <div class="d-flex gap-1 flex-shrink-0">
+                                    {% if party.display_email != "—" %}<a href="mailto:{{ party.display_email }}" class="btn btn-sm btn-outline-secondary" title="Email"><i class="bi bi-envelope"></i></a>{% endif %}
+                                    <form method="post" action="{% url 'crm:transaction_delete_party' transaction.pk party.pk %}" class="d-inline" onsubmit="return confirm('Remove this party?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove"><i class="bi bi-trash"></i></button>
+                                    </form>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-muted small mb-0">No parties added yet. Click Add Party to link clients or add contacts.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {# Tasks tab #}
+            <div class="tab-pane fade" id="tasks" role="tabpanel">
+                <div class="card card-crm">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <h5 class="mb-0 section-title">Tasks</h5>
+                        <button type="button" class="btn btn-crm-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#addTaskForm"><i class="bi bi-plus-lg me-1"></i> Add Task</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="collapse mb-4" id="addTaskForm">
+                            <form method="post" action="{% url 'crm:transaction_add_task' transaction.pk %}">
+                                {% csrf_token %}
+                                <div class="row g-2">
+                                    <div class="col-12">
+                                        <label for="id_description" class="form-label small">Description</label>
+                                        {{ task_form.description }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="id_due_date" class="form-label small">Due date</label>
+                                        {{ task_form.due_date }}
+                                    </div>
+                                    <div class="col-12">
+                                        <button type="submit" class="btn btn-crm-primary btn-sm">Add Task</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        {% if transaction.tasks.all %}
+                        <ul class="list-group list-group-crm list-group-flush">
+                            {% for task in transaction.tasks.all %}
+                            <li class="list-group-item px-0 d-flex align-items-center gap-2">
+                                <form method="post" action="{% url 'crm:transaction_toggle_task' transaction.pk task.pk %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-link p-0 text-decoration-none" title="{% if task.completed %}Mark incomplete{% else %}Mark complete{% endif %}">
+                                        {% if task.completed %}<i class="bi bi-check-circle-fill text-success"></i>{% else %}<i class="bi bi-circle text-muted"></i>{% endif %}
+                                    </button>
+                                </form>
+                                <span class="flex-grow-1 {% if task.completed %}text-muted text-decoration-line-through{% endif %}">{{ task.description }}</span>
+                                {% if task.due_date %}<small class="text-muted">{{ task.due_date|date:"M j, Y" }}</small>{% endif %}
+                                <form method="post" action="{% url 'crm:transaction_delete_task' transaction.pk task.pk %}" class="d-inline" onsubmit="return confirm('Delete this task?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                        <p class="text-muted small mb-0">No tasks yet. Click Add Task to create one.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Right: Milestones timeline #}
+    <div class="col-lg-3">
+        <div class="card card-crm">
+            <div class="card-header">
+                <h5 class="mb-0 section-title">Milestones</h5>
+            </div>
+            <div class="card-body">
+                <button type="button" class="btn btn-outline-secondary btn-sm w-100 mb-3" data-bs-toggle="collapse" data-bs-target="#addMilestoneForm"><i class="bi bi-plus-lg me-1"></i> Add Milestone</button>
+                <div class="collapse mb-3" id="addMilestoneForm">
+                    <form method="post" action="{% url 'crm:transaction_add_milestone' transaction.pk %}">
+                        {% csrf_token %}
+                        <div class="mb-2">
+                            <label class="form-label small">Type</label>
+                            {{ milestone_form.kind }}
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small">Date</label>
+                            {{ milestone_form.date }}
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small">Status</label>
+                            {{ milestone_form.status }}
+                        </div>
+                        <div class="form-check mb-2">
+                            {{ milestone_form.is_critical }}
+                            <label class="form-check-label small" for="id_is_critical">Critical / deadline</label>
+                        </div>
+                        <button type="submit" class="btn btn-crm-primary btn-sm">Add</button>
+                    </form>
+                </div>
+                {% if transaction.milestones.all %}
+                <ul class="timeline-crm list-unstyled mb-0">
+                    {% for m in transaction.milestones.all %}
+                    <li class="d-flex gap-2 mb-3">
+                        <span class="timeline-dot flex-shrink-0">
+                            {% if m.status == 'completed' %}<i class="bi bi-check-circle-fill text-success"></i>
+                            {% elif m.is_critical %}<i class="bi bi-alarm text-warning"></i>
+                            {% else %}<i class="bi bi-circle text-muted"></i>{% endif %}
+                        </span>
+                        <div>
+                            <span class="fw-500">{{ m.display_label }}</span>
+                            <br><small class="text-muted">{{ m.date|date:"M j, Y" }}</small>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-muted small mb-0">No milestones yet. Add listing date, inspection, closing, etc.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.nav-tabs-crm .nav-link { color: var(--crm-text-muted); font-weight: 500; border: 0; border-bottom: 2px solid transparent; padding: 0.5rem 0.75rem; }
+.nav-tabs-crm .nav-link:hover { color: var(--crm-primary); }
+.nav-tabs-crm .nav-link.active { color: var(--crm-primary); border-bottom-color: var(--crm-primary); background: transparent; }
+.timeline-crm .timeline-dot { width: 1.25rem; text-align: center; }
+</style>
+{% block extra_js %}
+<script>
+(function() {
+  var hash = window.location.hash;
+  if (hash === '#tasks') {
+    var el = document.getElementById('tasks-tab');
+    if (el && typeof bootstrap !== 'undefined') { bootstrap.Tab.getOrCreateInstance(el).show(); }
+  } else if (hash === '#notes') {
+    var el = document.getElementById('notes-tab');
+    if (el && typeof bootstrap !== 'undefined') { bootstrap.Tab.getOrCreateInstance(el).show(); }
+  } else if (hash === '#parties') {
+    var el = document.getElementById('parties-tab');
+    if (el && typeof bootstrap !== 'undefined') { bootstrap.Tab.getOrCreateInstance(el).show(); }
+  }
+})();
+</script>
+{% endblock %}
+{% endblock %}

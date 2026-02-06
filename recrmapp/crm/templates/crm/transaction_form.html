@@ -1,0 +1,79 @@
+{% extends 'crm/base.html' %}
+{% block title %}{% if object %}Edit Transaction{% else %}Add Transaction{% endif %}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'crm:transaction_list' %}">Transactions</a></li>
+        <li class="breadcrumb-item active">{% if object %}Edit{% else %}Add{% endif %}</li>
+    </ol>
+</nav>
+
+<h1 class="page-title mb-4">{% if object %}Edit Transaction{% else %}Add Transaction{% endif %}</h1>
+
+<form method="post" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="card card-crm mb-4">
+        <div class="card-header">
+            <h5 class="mb-0 section-title">Transaction</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label for="id_property" class="form-label">Property</label>
+                    {{ form.property }}
+                    {% if form.property.errors %}<div class="invalid-feedback d-block">{{ form.property.errors.0 }}</div>{% endif %}
+                </div>
+                <div class="col-md-4">
+                    <label for="id_status" class="form-label">Status</label>
+                    {{ form.status }}
+                </div>
+                <div class="col-md-4">
+                    <label for="id_representation" class="form-label">Representation</label>
+                    {{ form.representation }}
+                </div>
+                <div class="col-md-4">
+                    <label for="id_commission_percentage" class="form-label">Commission %</label>
+                    {{ form.commission_percentage }}
+                </div>
+                <div class="col-md-4">
+                    <label for="id_final_sales_price" class="form-label">Final sales price</label>
+                    {{ form.final_sales_price }}
+                </div>
+                <div class="col-md-4">
+                    <label for="id_file_number" class="form-label">File number</label>
+                    {{ form.file_number }}
+                </div>
+                <div class="col-md-6">
+                    <label for="id_listing_date" class="form-label">Listing date</label>
+                    {{ form.listing_date }}
+                </div>
+                <div class="col-md-6">
+                    <label for="id_lockbox_code" class="form-label">Lockbox code</label>
+                    {{ form.lockbox_code }}
+                </div>
+                <div class="col-12">
+                    <p class="text-muted small mb-0">GCI (Gross Commission Income) is calculated when status is Closed, using commission % × final sales price.</p>
+                </div>
+                <div class="col-12">
+                    <label for="id_showing_instructions" class="form-label">Showing instructions</label>
+                    {{ form.showing_instructions }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-4">
+        <button type="submit" class="btn btn-crm-primary">Save Transaction</button>
+        {% if object %}
+        <a href="{% url 'crm:transaction_detail' object.pk %}" class="btn btn-outline-secondary">Cancel</a>
+        {% else %}
+        <a href="{% url 'crm:transaction_list' %}" class="btn btn-outline-secondary">Cancel</a>
+        {% endif %}
+    </div>
+</form>
+{% endblock %}
