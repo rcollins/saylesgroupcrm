@@ -1,12 +1,8 @@
+import base64
 import html
 import json
 import mimetypes
 import os
-from email.mime.base import MIMEBase
-from email.mime.image import MIMEImage
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email import encoders
 from datetime import date
 from decimal import Decimal
 
@@ -18,7 +14,7 @@ from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from django.contrib import messages
-from django.core.mail import EmailMessage, EmailMultiAlternatives, get_connection, send_mail
+from django.core.mail import EmailMessage, EmailMultiAlternatives, send_mail
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, FormView
 from django.urls import reverse, reverse_lazy
@@ -43,12 +39,8 @@ MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024   # 10 MB per file
 MAX_ATTACHMENTS_TOTAL = 25 * 1024 * 1024  # 25 MB total
 
 
-# Content-ID used for inline signature image in HTML email (must match img src="cid:...")
-SIGNATURE_IMAGE_CID = 'signature_logo'
-
-
 def _get_email_signature_html_and_image():
-    """Build HTML for the email signature and optional image data for CID embedding.
+    """Build HTML for the email signature with optional image embedded as base64 (works with Resend/API backends).
     Returns (html_string, image_data) where image_data is (bytes, content_type) or None."""
     settings_obj = AppSettings.load()
     parts = []
@@ -65,8 +57,10 @@ def _get_email_signature_html_and_image():
                     or 'image/png'
                 )
                 image_data = (raw, content_type)
+                b64 = base64.b64encode(raw).decode('ascii')
+                data_url = f'data:{content_type};base64,{b64}'
                 parts.append(
-                    f'<p><img src="cid:{SIGNATURE_IMAGE_CID}" alt="Signature" style="max-width:100%; height:auto;"></p>'
+                    f'<p><img src="{html.escape(data_url)}" alt="Signature" style="max-width:100%; height:auto;"></p>'
                 )
             finally:
                 settings_obj.signature_image.close()
@@ -80,7 +74,7 @@ def _get_email_signature_html_and_image():
 
 def _send_email_with_attachments(to_list, subject, body, request):
     """Build and send an EmailMessage with optional attachments. Appends app signature if configured.
-    When signature includes an image, builds multipart/related with CID so the image displays inline."""
+    Signature image is embedded as base64 in the HTML so it displays with Resend and other API backends."""
     signature_html, signature_image_data = _get_email_signature_html_and_image()
     body_plain = body
     body_html = '<p>' + html.escape(body).replace('\n', '</p><p>') + '</p>' + signature_html if signature_html else None
@@ -101,58 +95,7 @@ def _send_email_with_attachments(to_list, subject, body, request):
         if ext not in ALLOWED_ATTACHMENT_EXTENSIONS:
             raise ValueError(f'File type "{ext}" not allowed. Use PDF or images (e.g. .pdf, .jpg, .png).')
 
-    if signature_image_data and body_html:
-        # Inline image: build MIME with multipart/related so img src="cid:signature_logo" works
-        img_bytes, img_content_type = signature_image_data
-        root = MIMEMultipart('mixed')
-        root['Subject'] = subject
-        root['From'] = settings.DEFAULT_FROM_EMAIL
-        root['To'] = ', '.join(to_list)
-        related = MIMEMultipart('related')
-        alt = MIMEMultipart('alternative')
-        alt.attach(MIMEText(body_plain, 'plain'))
-        alt.attach(MIMEText(body_html, 'html'))
-        related.attach(alt)
-        img = MIMEImage(img_bytes, _subtype=img_content_type.split('/')[-1] if '/' in img_content_type else 'png')
-        img.add_header('Content-ID', f'<{SIGNATURE_IMAGE_CID}>')
-        img.add_header('Content-Disposition', 'inline', filename='signature')
-        related.attach(img)
-        root.attach(related)
-        for f in files:
-            if not f or not getattr(f, 'name', None):
-                continue
-            f.seek(0)
-            content = f.read()
-            part = MIMEBase('application', 'octet-stream')
-            part.set_payload(content)
-            encoders.encode_base64(part)
-            part.add_header('Content-Disposition', 'attachment', filename=f.name)
-            root.attach(part)
-        # Send via backend (Anymail/Resend needs .to, .from_email, .subject, .body, .alternatives, .message(), .recipients())
-        # Capture in locals so the class body can reference them reliably
-        _to_list = to_list
-        _from_email = settings.DEFAULT_FROM_EMAIL
-        _subject = subject
-        _root = root
-        _body_plain = body_plain
-        _body_html = body_html
-
-        class _Wrapper:
-            to = _to_list
-            from_email = _from_email
-            subject = _subject
-            body = _body_plain
-            content_subtype = 'plain'
-            alternatives = [(_body_html, 'text/html')]
-
-            def recipients(self):
-                return _to_list
-
-            def message(self):
-                return _root
-        get_connection().send_messages([_Wrapper()])
-        return
-    elif body_html:
+    if body_html:
         message = EmailMultiAlternatives(
             subject=subject,
             body=body_plain,
