@@ -1,0 +1,8 @@
+{
+  "name": "recrmapp",
+  "version": "1.0.0",
+  "description": "RE CRM - Vercel deployment",
+  "devDependencies": {
+    "@ardnt/vercel-python-wsgi": "^0.2.0"
+  }
+}

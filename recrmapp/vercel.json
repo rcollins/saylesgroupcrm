@@ -2,14 +2,17 @@
   "version": 2,
   "builds": [
     {
-      "src": "recrmapp/wsgi.py",
-      "use": "@vercel/python"
+      "src": "index.py",
+      "use": "@ardnt/vercel-python-wsgi",
+      "config": {
+        "maxLambdaSize": "50mb"
+      }
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "recrmapp/wsgi.py"
+      "dest": "index.py"
     }
   ]
 }
