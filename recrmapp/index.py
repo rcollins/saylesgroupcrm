@@ -10,3 +10,4 @@ from recrmapp.wsgi import application  # noqa: E402
 
 # @vercel/python looks for 'app' or 'application' and wraps WSGI automatically
 app = application
+

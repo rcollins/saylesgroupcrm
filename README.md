@@ -12,6 +12,7 @@ A Django-based real estate CRM for managing clients, leads, properties, contacts
 - **Transactions** — Deals with parties, milestones, tasks, and notes
 - **Authentication** — Sign up, log in, logout, and password change
 - **App Admin** — Custom settings (app name, logo, chart colors, editable status/type lists); staff-only, separate from Django admin
+- **Email** — Send email from Client and Contact detail pages (Anymail + Resend)
 
 ## Requirements
 
@@ -44,6 +45,8 @@ A Django-based real estate CRM for managing clients, leads, properties, contacts
    ```env
    DEBUG=True
    ALLOWED_HOSTS=127.0.0.1,localhost,testserver
+   RESEND_API_KEY=re_...          # Optional: Anymail/Resend; if omitted, emails print to console
+   DEFAULT_FROM_EMAIL=...        # Optional when using Resend; defaults to onboarding@resend.dev
    DATABASE_URL=postgresql://user:pass@host/dbname
    ```
 
@@ -79,17 +82,32 @@ A Django-based real estate CRM for managing clients, leads, properties, contacts
 - `requirements.txt` — Python dependencies
 - `.env` — Local environment config (not committed; see `.gitignore`)
 
+## Email (Anymail + Resend)
+
+If `RESEND_API_KEY` is set in `.env`, the app sends real email via [Resend](https://resend.com/). Otherwise, the default backend is the console (messages are printed in the terminal).
+
+- **Send email from the app:** Open a Client or Contact that has an email address; use the “Send email” card to compose and send.
+- **Test configuration:** `python manage.py send_test_email you@example.com`
+
 ## Sample data (optional)
 
-Management commands to load sample data:
+Management commands load fictional data with **varying statuses** (and types where applicable). Run in this order so transactions can link to properties and clients:
+
+| Command | Count | Variety |
+|---------|-------|---------|
+| `load_sample_leads` | 10 | new, attempted, in_progress, connected, unqualified, bad_timing |
+| `load_sample_clients` | 15 | potential, active, closed, lost, inactive; buyer/seller/both |
+| `load_sample_contacts` | 20 | lender, agent, title_company, inspector, attorney, vendor, other |
+| `load_sample_properties` | 15 | available, under_contract, sold, off_market; multiple property types |
+| `load_sample_transactions` | 8 | active, under_contract, closed; buyer, seller, dual representation |
 
 ```bash
 cd recrmapp
-python manage.py load_sample_clients
-python manage.py load_sample_contacts
-python manage.py load_sample_leads
-python manage.py load_sample_properties
-python manage.py load_sample_transactions
+python manage.py load_sample_clients --clear    # optional: replace existing sample data
+python manage.py load_sample_contacts --clear
+python manage.py load_sample_leads --clear
+python manage.py load_sample_properties --clear
+python manage.py load_sample_transactions --clear
 ```
 
 ## License
