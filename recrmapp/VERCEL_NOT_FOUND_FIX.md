@@ -1,132 +1,112 @@
-# Resolving Vercel NOT_FOUND (404) for Django
+# Vercel NOT_FOUND (404) for Django — Correct Setup
 
-## 1. The fix (what to change)
-
-**Done in this repo:**
-
-- **`vercel.json`**  
-  - Use the **`@ardnt/vercel-python-wsgi`** builder (not `@vercel/python`) so that your Django WSGI app is actually invoked for every request.  
-  - Route destination should be **`/index.py`** (leading slash so Vercel resolves the serverless function correctly).
-
-- **Root Directory in Vercel**  
-  In the Vercel project: **Settings → General → Root Directory** must be the folder that contains `manage.py`, `index.py`, `vercel.json`, and `package.json` (e.g. `recrmapp` if your repo root is one level above).
-
-- **Dependencies**  
-  `package.json` must include `@ardnt/vercel-python-wsgi` so the build can run the WSGI builder.  
-  `requirements.txt` must be in that same root folder so the builder can install Python deps.
-
-**Checklist:**
-
-1. `vercel.json` uses `"use": "@ardnt/vercel-python-wsgi"` and `"dest": "/index.py"`.
-2. Root Directory in Vercel points at the directory that has `index.py` and `vercel.json`.
-3. Build runs successfully (no red build in the dashboard).
-4. Env vars (e.g. `SECRET_KEY`, `DATABASE_URL`) are set in Vercel.
+**Use the official Vercel Python runtime.** Do not use third-party WSGI builders.
 
 ---
 
-## 2. Root cause (why the error happened)
+## 1. Correct configuration
 
-**What the code was doing vs what it needed to do**
+### vercel.json
 
-- **What it was doing:**  
-  `vercel.json` was using **`@vercel/python`** with `index.py`.  
-  The generic Python runtime only runs a **request handler**: a function or callable it can call with one request and expect a response. It does **not** start a WSGI server or call a WSGI app.
+Use **`@vercel/python`** (official). No `package.json` or npm packages.
 
-- **What it needed to do:**  
-  Django is a **WSGI application**. Something must:
-  - Receive the HTTP request from Vercel.
-  - Convert it into a WSGI `environ` and `start_response` call.
-  - Call your Django app (e.g. `application(environ, start_response)`).
-  - Convert the WSGI response back into the HTTP response Vercel returns.
+```json
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "index.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "index.py"
+    }
+  ]
+}
+```
 
-**What actually triggered NOT_FOUND**
+- **Builder:** `@vercel/python` — official, supports WSGI (Django/Flask) and ASGI.
+- **Route dest:** `"index.py"` (with or without leading `/`).
 
-- With `@vercel/python`, the runtime looked for a **handler** in `index.py` (e.g. a default export or a specific handler signature). Your file only exposed a WSGI callable (`app` / `application`), which is not that handler.
-- So either:
-  - No valid serverless function was produced for that entrypoint, or  
-  - A function was produced but it didn’t handle the request (or didn’t exist at the path Vercel was routing to).
-- Result: for every request (including `/`), Vercel had no runnable handler or the route didn’t match the function, so it returned **404 NOT_FOUND**.
+### index.py (entry point)
 
-**Misconception**
+- Add project root to `sys.path` so `recrmapp` is importable when Vercel runs the function.
+- Expose **`app`** (or `application`). The runtime detects a WSGI callable and wraps it.
 
-- Assuming that “pointing Vercel at a file that exposes a WSGI app” is enough.  
-- On Vercel, you must use either:
-  - A builder that **knows about WSGI** (e.g. `@ardnt/vercel-python-wsgi`), or  
-  - A small adapter that **turns the Vercel request into a WSGI call** and then calls your Django app.
+```python
+import os
+import sys
 
----
+sys.path.insert(0, os.path.dirname(__file__))
 
-## 3. Underlying concept
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'recrmapp.settings')
 
-**Why NOT_FOUND exists**
+from recrmapp.wsgi import application
 
-- Vercel returns NOT_FOUND when **no resource or function is configured to handle that path**.  
-- It protects you from silently serving the wrong thing or failing in an unclear way: the platform is saying “I have nothing registered for this URL.”
+app = application  # Vercel looks for 'app' or 'application' and wraps WSGI
+```
 
-**Mental model**
+### What you do **not** need
 
-- **Vercel = static + serverless:**  
-  - Some paths → static files (or front-end app).  
-  - Other paths → serverless functions.  
-- Each serverless function is a **single entrypoint** (one file, one handler).  
-- If you want “every path (e.g. `/(.*)`) to go to Django,” you need:
-  - **One** serverless function that is responsible for that.
-  - That function must **invoke your Django app** (via a WSGI adapter or a builder that does it).
-
-So:
-
-- **Request path** → Vercel routing (`routes` in `vercel.json`) → **one function** (e.g. `/index.py`).
-- That function’s **job** is to turn the HTTP request into a WSGI call to Django and return the response.  
-- The WSGI builder does that job; the plain Python runtime does not.
-
-**How this fits framework design**
-
-- Django is built for **long-running processes** (WSGI/ASGI servers).  
-- Vercel is **request‑scoped**: one invocation per request.  
-- The “adapter” (or builder) is the layer that maps **one Vercel request → one WSGI call → one response**.  
-- Without that layer, Vercel never actually “runs” your Django app, so you get NOT_FOUND.
+- **No** `package.json` for Python-only Django on Vercel.
+- **No** `@ardnt/vercel-python-wsgi` or other third-party WSGI builders.
+- **No** npm install step for this deployment.
 
 ---
 
-## 4. Warning signs and similar mistakes
+## 2. Why NOT_FOUND usually happens (Django on Vercel)
 
-**What to look for**
+Common causes, in order of likelihood:
 
-- **404 on every path** (including `/`) → routing or entrypoint problem, not a single missing Django URL.
-- **Using `@vercel/python` with a file that only exports a WSGI app** → runtime won’t call your app.
-- **`dest` without a leading slash** (e.g. `"dest": "index.py"`) → some setups expect `"/index.py"` for the function path.
-- **Root Directory wrong** → Vercel builds from another folder, so it never sees your `index.py` / `vercel.json` and no function is created where you expect.
+1. **Environment variables missing in Vercel**  
+   Set in Project → Settings → Environment Variables:
+   - `SECRET_KEY`
+   - `DATABASE_URL` (Postgres; SQLite is not suitable for serverless)
+   - `DEBUG=False`
+   - `ALLOWED_HOSTS` if you override in settings (e.g. `.vercel.app,.now.sh`)
 
-**Similar mistakes**
+2. **ALLOWED_HOSTS**  
+   Must include your Vercel host (e.g. `.vercel.app`). Already set in this project.
 
-- Using `@vercel/python` with Flask/FastAPI without exporting the app in the way the runtime expects (or without an adapter).
-- Putting `vercel.json` in a subfolder but not setting Root Directory, so Vercel uses the repo root and your config is ignored.
-- Assuming “it works locally” implies “it will work on Vercel” without checking that the **deployment contract** (builder + route + entrypoint) is satisfied.
+3. **Database**  
+   Use a hosted Postgres (e.g. Vercel Postgres, Neon, Supabase). SQLite does not work reliably on Vercel serverless.
 
-**Code/config smells**
+4. **Root Directory**  
+   In Vercel → Settings → General, **Root Directory** should be the folder that contains `index.py`, `vercel.json`, `manage.py`, and `recrmapp/`. Often `.` (repo root) or a single subfolder (e.g. `recrmapp`).
 
-- `vercel.json` has `builds` + `routes` but you never see a successful build or the function in the deployment.
-- No `package.json` (or no `@ardnt/vercel-python-wsgi`) when using a third‑party builder that’s an npm package.
-- Root Directory not set when the “real” app lives in a subfolder.
+5. **Build or runtime errors**  
+   Check **Build** and **Function** logs in the Vercel dashboard for import errors, missing deps, or Django startup errors.
 
 ---
 
-## 5. Alternatives and trade-offs
+## 3. Mental model
 
-**A. Use `@ardnt/vercel-python-wsgi` (current approach)**  
-- **Pros:** Minimal config, one `index.py`, works with existing Django layout.  
-- **Cons:** Third‑party builder; dependency on its maintenance.
+- **NOT_FOUND** = Vercel has no resource or function for that URL (or the function failed to start).
+- **`@vercel/python`** can run WSGI apps: it looks for `app` / `application` in the entry file and wraps them. You do not need a separate WSGI builder.
+- One entry file (`index.py`) → one serverless function; routing sends all paths to it, and Django’s URLconf handles the path.
 
-**B. Run Django in a Docker/container on another platform (Railway, Render, Fly.io, etc.)**  
-- **Pros:** No WSGI↔serverless adapter; closer to “normal” Django deployment.  
-- **Cons:** Not serverless; you manage (or pay for) a long‑running process.
+---
 
-**C. Use Vercel’s official pattern (e.g. Django in `api/` with their structure)**  
-- **Pros:** Aligns with Vercel’s own examples.  
-- **Cons:** May require moving or renaming your project to match their layout (e.g. `api/wsgi.py`, `api/settings.py`).
+## 4. Checklist before blaming routing
 
-**D. Adapter in code (no third‑party builder)**  
-- **Pros:** Full control; no npm builder.  
-- **Cons:** You maintain the request↔WSGI conversion and any edge cases (streaming, headers, etc.).
+- [ ] `vercel.json` uses `"use": "@vercel/python"` and `"dest": "index.py"`.
+- [ ] `index.py` adds project root to `sys.path` and exposes `app = application`.
+- [ ] `ALLOWED_HOSTS` includes `.vercel.app` (or your domain).
+- [ ] Env vars set in Vercel: `SECRET_KEY`, `DATABASE_URL`, `DEBUG`.
+- [ ] Database is Postgres (not SQLite).
+- [ ] Root Directory points at the folder that contains `index.py` and `vercel.json`.
+- [ ] Build succeeds; check Function logs for Django errors.
 
-**Recommendation:** For this repo, **A** is the most straightforward: keep `@ardnt/vercel-python-wsgi`, `index.py`, and `"dest": "/index.py"`, and ensure Root Directory and env vars are set. If you later need a different platform or more control, **B** or **D** are good alternatives.
+---
+
+## 5. References
+
+- [Vercel Python runtime](https://vercel.com/docs/functions/runtimes/python) — official docs.
+- [Django on Vercel template](https://vercel.com/templates/python/django-hello-world) — official example.
+
+---
+
+*This doc was updated to follow Vercel’s official guidance and remove incorrect advice about third-party WSGI builders and package.json.*
