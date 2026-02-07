@@ -20,9 +20,9 @@ if not SECRET_KEY:
     raise ValueError("SECRET_KEY environment variable is required (set it in your .env file).")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'True').lower() in ('1', 'true', 'yes')
+DEBUG = False
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '.vercel.app,.now.sh,localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = ['.vercel.app', '.now.sh', 'localhost', '127.0.0.1', '*']
 
 
 # Application definition
