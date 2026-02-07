@@ -22,9 +22,7 @@ if not SECRET_KEY:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True').lower() in ('1', 'true', 'yes')
 
-ALLOWED_HOSTS = os.environ.get(
-    '127.0.0.1,localhost,.vercel.app','.now.sh'
-).split(',')
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '.vercel.app,.now.sh,localhost,127.0.0.1').split(',')
 
 
 # Application definition
