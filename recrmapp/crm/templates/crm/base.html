@@ -173,8 +173,8 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-crm">
         <div class="container-fluid px-4">
-            <a class="navbar-brand" href="{% url 'crm:home' %}">
-                {% if app_settings.logo_url %}<img src="{{ app_settings.logo_url }}" alt="{{ app_settings.app_name }}" height="28" class="d-inline-block align-text-top me-1">{% else %}<i class="bi bi-building me-1"></i>{% endif %}{{ app_settings.app_name }}
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'crm:home' %}">
+                {% if app_settings.logo_url %}<img src="{{ app_settings.logo_url }}" alt="" height="28" class="d-inline-block align-text-top me-2">{% else %}<i class="bi bi-building me-1"></i>{% endif %}{{ app_settings.app_name }}
             </a>
             <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-label="Toggle navigation">
                 <i class="bi bi-list fs-4"></i>
@@ -219,7 +219,6 @@
                     </div>
                     {% else %}
                     <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-outline-secondary btn-sm">Log in</a>
-                    <a href="{% url 'crm:signup' %}" class="btn btn-crm-primary btn-sm">Sign up</a>
                     {% endif %}
                 </div>
             </div>

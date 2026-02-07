@@ -27,7 +27,7 @@ from .choice_utils import get_choices_for_list
 from .forms import (
     ClientForm, ClientNoteForm, ContactForm, ContactNoteForm,
     LeadForm, LeadNoteForm, PropertyForm, PropertyNoteForm,
-    SendEmailForm, SendTransactionEmailForm, SignupForm,
+    SendEmailForm, SendTransactionEmailForm,
     TransactionForm, TransactionNoteForm, TransactionPartyForm, TransactionMilestoneForm, TransactionTaskForm,
 )
 
@@ -349,19 +349,10 @@ def home(request):
 
 
 def signup(request):
-    """User registration. Redirects to home and logs in on success."""
+    """Signup disabled; redirect to login."""
     if request.user.is_authenticated:
         return redirect('crm:home')
-    if request.method == 'POST':
-        form = SignupForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            login(request, user)
-            messages.success(request, f'Welcome, {user.username}.')
-            return redirect(settings.LOGIN_REDIRECT_URL)
-    else:
-        form = SignupForm()
-    return render(request, 'crm/signup.html', {'form': form})
+    return redirect('login')
 
 
 @login_required

@@ -20,7 +20,8 @@ if not SECRET_KEY:
     raise ValueError("SECRET_KEY environment variable is required (set it in your .env file).")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+# In development, leave DEBUG unset or set DEBUG=True so media/static are served; set DEBUG=False in production (e.g. Vercel).
+DEBUG = os.environ.get('DEBUG', 'True').lower() in ('1', 'true', 'yes')
 
 ALLOWED_HOSTS = [
     '.vercel.app', 
