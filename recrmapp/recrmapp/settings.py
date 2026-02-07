@@ -22,7 +22,21 @@ if not SECRET_KEY:
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ['.vercel.app', '.now.sh', 'localhost', '127.0.0.1', '*']
+ALLOWED_HOSTS = [
+    '.vercel.app', 
+    '.now.sh', 
+    'localhost', 
+    '127.0.0.1',
+    'saylesgroupcrm.vercel.app',
+    '*']
+
+
+# CSRF settings for Vercel
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.vercel.app',
+    'https://*.now.sh',
+    'https://saylesgroupcrm-git-main-robert-collins-jrs-projects.vercel.app/',
+]
 
 
 # Application definition
