@@ -2,14 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "recrmapp/recrmapp/wsgi.py",
+      "src": "recrmapp/wsgi.py",
       "use": "@vercel/python"
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "recrmapp/recrmapp/wsgi.py"
+      "dest": "recrmapp/wsgi.py"
     }
   ]
 }
