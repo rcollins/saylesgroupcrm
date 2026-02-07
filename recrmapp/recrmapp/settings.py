@@ -23,8 +23,7 @@ if not SECRET_KEY:
 DEBUG = os.environ.get('DEBUG', 'True').lower() in ('1', 'true', 'yes')
 
 ALLOWED_HOSTS = os.environ.get(
-    'ALLOWED_HOSTS',
-    '127.0.0.1,localhost,testserver,.vercel.app','.now.sh'
+    '127.0.0.1,localhost,.vercel.app','.now.sh'
 ).split(',')
 
 
