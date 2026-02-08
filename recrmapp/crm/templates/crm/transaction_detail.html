@@ -193,7 +193,7 @@
                         <h5 class="mb-0 section-title">Send email</h5>
                     </div>
                     <div class="card-body">
-                        <form method="post" action="{% url 'crm:transaction_send_email' transaction.pk %}" enctype="multipart/form-data">
+                        <form id="transaction-email-form" method="post" action="{% url 'crm:transaction_send_email' transaction.pk %}" enctype="multipart/form-data">
                             {% csrf_token %}
                             {% if transaction_email_form.non_field_errors %}<div class="alert alert-danger mb-2">{{ transaction_email_form.non_field_errors }}</div>{% endif %}
                             <div class="mb-2">
@@ -225,11 +225,15 @@
                                 {% if transaction_email_form.body.errors %}<div class="invalid-feedback d-block">{{ transaction_email_form.body.errors.0 }}</div>{% endif %}
                             </div>
                             <div class="mb-3">
-                                <label for="id_tx_attachments" class="form-label">Attachments (optional)</label>
-                                <input type="file" name="attachments" id="id_tx_attachments" class="form-control" accept=".pdf,image/*" multiple>
-                                <span class="form-text small">You can select multiple files. PDF or images; max 10 MB per file, 25 MB total.</span>
+                                <label class="form-label">Attachments (optional)</label>
+                                <div id="tx-attachments-dropzone" class="border rounded p-3 text-center bg-light" style="min-height: 100px; border-style: dashed !important;">
+                                    <input type="file" name="attachments" id="id_tx_attachments" class="d-none" accept=".pdf,image/*" multiple>
+                                    <p class="mb-1 text-muted small" id="tx-dropzone-prompt"><i class="bi bi-cloud-arrow-down me-1"></i> Drag files here from any folder, or <button type="button" class="btn btn-link btn-sm p-0 align-baseline" id="tx-browse-btn">browse</button></p>
+                                    <div id="tx-attachments-list" class="mb-0 small text-start"></div>
+                                </div>
+                                <span class="form-text small">PDF or images; max 10 MB per file, 25 MB total.</span>
                             </div>
-                            <button type="submit" class="btn btn-crm-primary"><i class="bi bi-envelope me-1"></i> Send email</button>
+                            <button type="submit" class="btn btn-crm-primary" id="tx-email-submit"><i class="bi bi-envelope me-1"></i> Send email</button>
                         </form>
                     </div>
                 </div>
@@ -362,6 +366,114 @@
     var el = document.getElementById('parties-tab');
     if (el && typeof bootstrap !== 'undefined') { bootstrap.Tab.getOrCreateInstance(el).show(); }
   }
+})();
+</script>
+<script>
+(function() {
+  var form = document.getElementById('transaction-email-form');
+  if (!form) return;
+  var dropzone = document.getElementById('tx-attachments-dropzone');
+  var fileInput = document.getElementById('id_tx_attachments');
+  var browseBtn = document.getElementById('tx-browse-btn');
+  var listEl = document.getElementById('tx-attachments-list');
+  var promptEl = document.getElementById('tx-dropzone-prompt');
+  var txFiles = [];
+
+  function addFiles(files) {
+    if (!files || !files.length) return;
+    for (var i = 0; i < files.length; i++) {
+      var f = files[i];
+      if (f && f.name) {
+        var seen = txFiles.some(function(existing) { return existing.name === f.name && existing.size === f.size && existing.lastModified === f.lastModified; });
+        if (!seen) txFiles.push(f);
+      }
+    }
+    renderList();
+  }
+
+  function getDroppedFiles(dataTransfer) {
+    var out = [];
+    if (dataTransfer.files && dataTransfer.files.length) {
+      for (var i = 0; i < dataTransfer.files.length; i++) out.push(dataTransfer.files[i]);
+    }
+    if (dataTransfer.items && dataTransfer.items.length && out.length === 0) {
+      for (var j = 0; j < dataTransfer.items.length; j++) {
+        if (dataTransfer.items[j].kind === 'file') {
+          var file = dataTransfer.items[j].getAsFile();
+          if (file) out.push(file);
+        }
+      }
+    }
+    return out;
+  }
+
+  function removeFile(index) {
+    txFiles.splice(index, 1);
+    renderList();
+  }
+
+  function renderList() {
+    listEl.innerHTML = '';
+    if (txFiles.length === 0) {
+      promptEl.style.display = '';
+      return;
+    }
+    promptEl.style.display = 'none';
+    var parts = [];
+    txFiles.forEach(function(f, i) {
+      var name = (f.name || 'File').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      parts.push('<span class="d-inline-flex align-items-center me-2 mb-1"><span class="text-truncate" style="max-width:180px" title="' + name + '">' + name + '</span><button type="button" class="btn btn-sm btn-link text-danger py-0 px-1 ms-1" data-index="' + i + '" aria-label="Remove">×</button></span>');
+    });
+    listEl.innerHTML = parts.join(', ');
+    listEl.querySelectorAll('button[data-index]').forEach(function(btn) {
+      btn.addEventListener('click', function() { removeFile(parseInt(this.getAttribute('data-index'), 10)); });
+    });
+  }
+
+  if (dropzone) {
+    dropzone.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.add('border-primary', 'bg-white');
+    });
+    dropzone.addEventListener('dragleave', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.remove('border-primary', 'bg-white');
+    });
+    dropzone.addEventListener('drop', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.remove('border-primary', 'bg-white');
+      var files = getDroppedFiles(e.dataTransfer || {});
+      if (files.length) addFiles(files);
+    });
+  }
+  if (browseBtn && fileInput) {
+    browseBtn.addEventListener('click', function(e) { e.preventDefault(); fileInput.click(); });
+  }
+  if (fileInput) {
+    fileInput.addEventListener('change', function() {
+      addFiles(this.files);
+      this.value = '';
+    });
+  }
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var fd = new FormData(form);
+    fd.delete('attachments');
+    txFiles.forEach(function(f) { fd.append('attachments', f); });
+    var submitBtn = document.getElementById('tx-email-submit');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Sending…'; }
+    fetch(form.action, { method: 'POST', body: fd, redirect: 'follow', credentials: 'same-origin' })
+      .then(function(res) {
+        window.location.href = res.url || form.action;
+      })
+      .catch(function() {
+        window.location.href = form.action;
+      });
+  });
 })();
 </script>
 {% endblock %}
