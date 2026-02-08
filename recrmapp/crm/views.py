@@ -29,7 +29,13 @@ from .forms import (
     LeadForm, LeadNoteForm, PropertyForm, PropertyNoteForm,
     SendEmailForm, SendTransactionEmailForm,
     TransactionForm, TransactionNoteForm, TransactionPartyForm, TransactionMilestoneForm, TransactionTaskForm,
-    UserProfileForm,
+    UserProfileForm, ImportForm,
+)
+from .import_export import (
+    EXPORT_COLUMNS,
+    export_queryset_csv,
+    export_queryset_xlsx,
+    import_records,
 )
 
 MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -1035,6 +1041,98 @@ def transaction_delete_task(request, pk, task_pk):
     task = get_object_or_404(TransactionTask, pk=task_pk, transaction=transaction)
     task.delete()
     return redirect(_transaction_detail_tasks_url(pk))
+
+
+# --- Import/Export (CSV, Excel) ---
+
+def _export_response(request, model_key, queryset, list_url_name):
+    """Return export file or redirect if not GET with format."""
+    if request.method != 'GET':
+        return redirect(list_url_name)
+    fmt = (request.GET.get('format') or '').lower()
+    if fmt not in ('csv', 'xlsx'):
+        return redirect(list_url_name)
+    columns = EXPORT_COLUMNS.get(model_key, [])
+    if not columns:
+        return redirect(list_url_name)
+    filename = f'{model_key}s'
+    if fmt == 'csv':
+        return export_queryset_csv(queryset, columns, filename)
+    return export_queryset_xlsx(queryset, columns, filename)
+
+
+@login_required
+def export_leads(request):
+    queryset = Lead.objects.all().order_by('last_name', 'first_name')
+    return _export_response(request, 'lead', queryset, 'crm:lead_list')
+
+
+@login_required
+def export_clients(request):
+    queryset = Client.objects.all().order_by('last_name', 'first_name')
+    return _export_response(request, 'client', queryset, 'crm:client_list')
+
+
+@login_required
+def export_contacts(request):
+    queryset = Contact.objects.all().order_by('last_name', 'first_name')
+    return _export_response(request, 'contact', queryset, 'crm:contact_list')
+
+
+@login_required
+def export_properties(request):
+    queryset = Property.objects.all().order_by('-created_at')
+    return _export_response(request, 'property', queryset, 'crm:property_list')
+
+
+def _import_view(request, model_key, list_url_name, list_label):
+    """Generic import view: GET form, POST run import and show result."""
+    if request.method == 'POST':
+        form = ImportForm(request.POST, request.FILES)
+        if form.is_valid():
+            fmt = form.cleaned_data['format_type']
+            result = import_records(request.FILES['file'], model_key, fmt)
+            if result['errors'] and result['created'] == 0:
+                for err in result['errors'][:10]:
+                    messages.error(request, f"Row {err['row']}: {err['message']}")
+                if len(result['errors']) > 10:
+                    messages.error(request, f"... and {len(result['errors']) - 10} more errors.")
+            else:
+                if result['created']:
+                    messages.success(request, f"Imported {result['created']} {list_label}.")
+                for err in result['errors'][:5]:
+                    messages.warning(request, f"Row {err['row']}: {err['message']}")
+                if len(result['errors']) > 5:
+                    messages.warning(request, f"... and {len(result['errors']) - 5} more row errors.")
+            return redirect(list_url_name)
+    else:
+        form = ImportForm()
+    return render(request, 'crm/import_form.html', {
+        'form': form,
+        'model_key': model_key,
+        'list_label': list_label,
+        'list_url_name': list_url_name,
+    })
+
+
+@login_required
+def import_leads(request):
+    return _import_view(request, 'lead', 'crm:lead_list', 'leads')
+
+
+@login_required
+def import_clients(request):
+    return _import_view(request, 'client', 'crm:client_list', 'clients')
+
+
+@login_required
+def import_contacts(request):
+    return _import_view(request, 'contact', 'crm:contact_list', 'contacts')
+
+
+@login_required
+def import_properties(request):
+    return _import_view(request, 'property', 'crm:property_list', 'properties')
 
 
 # --- User profile ---

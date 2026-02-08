@@ -9,6 +9,8 @@ urlpatterns = [
     path('profile/', views.profile_edit, name='profile'),
     # Clients
     path('clients/', views.ClientListView.as_view(), name='client_list'),
+    path('clients/export/', views.export_clients, name='client_export'),
+    path('clients/import/', views.import_clients, name='client_import'),
     path('clients/add/', views.ClientCreateView.as_view(), name='client_add'),
     path('clients/<int:pk>/', views.ClientDetailView.as_view(), name='client_detail'),
     path('clients/<int:pk>/edit/', views.ClientUpdateView.as_view(), name='client_edit'),
@@ -17,6 +19,8 @@ urlpatterns = [
     path('clients/<int:pk>/send-email/', views.send_email_to_client, name='client_send_email'),
     # Contacts
     path('contacts/', views.ContactListView.as_view(), name='contact_list'),
+    path('contacts/export/', views.export_contacts, name='contact_export'),
+    path('contacts/import/', views.import_contacts, name='contact_import'),
     path('contacts/add/', views.ContactCreateView.as_view(), name='contact_add'),
     path('contacts/<int:pk>/', views.ContactDetailView.as_view(), name='contact_detail'),
     path('contacts/<int:pk>/edit/', views.ContactUpdateView.as_view(), name='contact_edit'),
@@ -25,6 +29,8 @@ urlpatterns = [
     path('contacts/<int:pk>/send-email/', views.send_email_to_contact, name='contact_send_email'),
     # Properties
     path('properties/', views.PropertyListView.as_view(), name='property_list'),
+    path('properties/export/', views.export_properties, name='property_export'),
+    path('properties/import/', views.import_properties, name='property_import'),
     path('properties/add/', views.PropertyCreateView.as_view(), name='property_add'),
     path('properties/<int:pk>/', views.PropertyDetailView.as_view(), name='property_detail'),
     path('properties/<int:pk>/edit/', views.PropertyUpdateView.as_view(), name='property_edit'),
@@ -34,6 +40,8 @@ urlpatterns = [
     path('properties/<int:pk>/photos/<int:photo_pk>/delete/', views.property_delete_photo, name='property_delete_photo'),
     # Leads
     path('leads/', views.LeadListView.as_view(), name='lead_list'),
+    path('leads/export/', views.export_leads, name='lead_export'),
+    path('leads/import/', views.import_leads, name='lead_import'),
     path('leads/add/', views.LeadCreateView.as_view(), name='lead_add'),
     path('leads/<int:pk>/', views.LeadDetailView.as_view(), name='lead_detail'),
     path('leads/<int:pk>/edit/', views.LeadUpdateView.as_view(), name='lead_edit'),

@@ -339,6 +339,21 @@ class TransactionTaskForm(forms.ModelForm):
         }
 
 
+# --- Import form (CSV/Excel upload) ---
+
+class ImportForm(forms.Form):
+    file = forms.FileField(
+        label='File',
+        widget=forms.FileInput(attrs={'class': 'form-control', 'accept': '.csv,.xlsx,.xls'}),
+    )
+    format_type = forms.ChoiceField(
+        label='Format',
+        choices=[('csv', 'CSV'), ('xlsx', 'Excel (.xlsx)')],
+        widget=forms.RadioSelect(attrs={'class': 'form-check-input'}),
+        initial='csv',
+    )
+
+
 # --- User profile forms ---
 
 class UserProfileForm(forms.ModelForm):

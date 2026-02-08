@@ -5,12 +5,20 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
     <h1 class="page-title mb-0">Leads</h1>
-    <div class="d-flex align-items-center gap-2">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
         {% if show_all %}
         <a href="{% url 'crm:lead_list' %}{% if querystring_without_show_all %}?{{ querystring_without_show_all }}{% endif %}" class="btn btn-outline-secondary btn-sm">Show active only</a>
         {% else %}
         <a href="{% url 'crm:lead_list' %}?show_all=1{% if pagination_querystring %}&{{ pagination_querystring }}{% endif %}" class="btn btn-outline-secondary btn-sm">Show all</a>
         {% endif %}
+        <div class="dropdown d-inline-block">
+            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="leadExportMenu" data-bs-toggle="dropdown" aria-expanded="false"><i class="bi bi-download me-1"></i> Export</button>
+            <ul class="dropdown-menu" aria-labelledby="leadExportMenu">
+                <li><a class="dropdown-item" href="{% url 'crm:lead_export' %}?format=csv">CSV</a></li>
+                <li><a class="dropdown-item" href="{% url 'crm:lead_export' %}?format=xlsx">Excel</a></li>
+            </ul>
+        </div>
+        <a href="{% url 'crm:lead_import' %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-upload me-1"></i> Import</a>
         <a href="{% url 'crm:lead_add' %}" class="btn btn-crm-primary">
             <i class="bi bi-plus-lg me-1"></i> Add Lead
         </a>

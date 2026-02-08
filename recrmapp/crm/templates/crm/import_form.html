@@ -1,0 +1,42 @@
+{% extends 'crm/base.html' %}
+{% block title %}Import {{ list_label }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'crm:home' %}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url list_url_name %}">{{ list_label|capfirst }}</a></li>
+        <li class="breadcrumb-item active">Import</li>
+    </ol>
+</nav>
+
+<h1 class="page-title mb-4">Import {{ list_label }}</h1>
+<p class="text-muted small mb-4">Upload a CSV or Excel (.xlsx) file. The first row should be column headers. Use an <a href="{% url list_url_name %}">export</a> as a template for the expected columns.</p>
+
+<div class="card card-crm">
+    <div class="card-body">
+        <form method="post" action="" enctype="multipart/form-data">
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+            <div class="mb-3">
+                <label for="id_file" class="form-label">File</label>
+                {{ form.file }}
+                {% if form.file.errors %}<div class="invalid-feedback d-block">{{ form.file.errors.0 }}</div>{% endif %}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Format</label>
+                <div class="d-flex gap-3">
+                    {% for choice in form.format_type %}
+                    <div class="form-check">
+                        {{ choice.tag }}
+                        <label class="form-check-label" for="{{ choice.id_for_label }}">{{ choice.choice_label }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <button type="submit" class="btn btn-crm-primary"><i class="bi bi-upload me-1"></i> Import</button>
+            <a href="{% url list_url_name %}" class="btn btn-outline-secondary">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}
