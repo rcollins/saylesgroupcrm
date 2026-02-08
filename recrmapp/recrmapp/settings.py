@@ -150,7 +150,7 @@ if AWS_STORAGE_BUCKET_NAME:
             'BACKEND': 'storages.backends.s3.S3Storage',
             'OPTIONS': {
                 'bucket_name': AWS_STORAGE_BUCKET_NAME,
-                'location': os.environ.get('AWS_LOCATION', 'media'),
+                'location': os.environ.get('AWS_S3_LOCATION', 'media'),
                 'region_name': os.environ.get('AWS_S3_REGION_NAME') or None,
                 'default_acl': 'public-read',
                 'querystring_auth': False,
