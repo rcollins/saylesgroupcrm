@@ -11,7 +11,7 @@
 </nav>
 
 <h1 class="page-title mb-4">Application Admin</h1>
-<p class="text-muted small mb-4">Configure application name, logo, chart colors, and choice lists. Changes apply across the app immediately.</p>
+<p class="text-muted small mb-4">Configure application name, logo, chart colors, and choice lists. Email signatures are set per user in <a href="{% url 'crm:profile' %}">Profile</a>. Changes apply across the app immediately.</p>
 
 <div class="card card-crm mb-4">
     <div class="card-header">
@@ -56,24 +56,6 @@
                         <input type="text" name="dual_color" value="{{ form.dual_color.initial }}" class="form-control" placeholder="#b45309">
                     </div>
                 </div>
-            </div>
-            <div class="mb-3">
-                <label for="id_email_signature" class="form-label">Email signature</label>
-                <p class="form-text small text-muted mb-2">HTML appended to outgoing emails. Use <code>&lt;a href="url"&gt;link text&lt;/a&gt;</code> for links and <code>&lt;img src="https://..." alt="..."&gt;</code> for images (use a full image URL).</p>
-                <textarea name="email_signature" class="form-control font-monospace" rows="8" id="id_email_signature" placeholder="e.g. &lt;p&gt;Best regards,&lt;br&gt;Jane Smith&lt;/p&gt;">{% if form.email_signature.value %}{{ form.email_signature.value }}{% elif form.instance.email_signature %}{{ form.instance.email_signature }}{% endif %}</textarea>
-                {% if form.email_signature.errors %}<div class="invalid-feedback d-block">{{ form.email_signature.errors }}</div>{% endif %}
-            </div>
-            <div class="mb-3">
-                <label for="id_signature_image" class="form-label">Signature image (optional)</label>
-                <p class="form-text small text-muted mb-2">Upload an image (e.g. logo or headshot) to show at the end of the signature. It will appear below the HTML above.</p>
-                <input type="file" name="signature_image" class="form-control" id="id_signature_image" accept="image/*">
-                {% if form.instance.signature_image %}
-                <p class="small text-muted mt-1 mb-0">Current: <a href="{{ form.instance.signature_image.url }}" target="_blank">View image</a></p>
-                <div class="form-check mt-2">
-                    <input type="checkbox" name="clear_signature_image" id="id_clear_signature_image" class="form-check-input" value="1">
-                    <label class="form-check-label" for="id_clear_signature_image">Remove signature image</label>
-                </div>
-                {% endif %}
             </div>
             <button type="submit" class="btn btn-crm-primary">Save application settings</button>
         </form>

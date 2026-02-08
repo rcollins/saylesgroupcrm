@@ -19,7 +19,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, FormView
 from django.urls import reverse, reverse_lazy
 from .models import (
-    AppSettings, ChoiceList,
+    AppSettings, ChoiceList, UserProfile,
     Client, Contact, Lead, Property, PropertyPhoto,
     Transaction, TransactionNote, TransactionParty, TransactionMilestone, TransactionTask,
 )
@@ -29,6 +29,7 @@ from .forms import (
     LeadForm, LeadNoteForm, PropertyForm, PropertyNoteForm,
     SendEmailForm, SendTransactionEmailForm,
     TransactionForm, TransactionNoteForm, TransactionPartyForm, TransactionMilestoneForm, TransactionTaskForm,
+    UserProfileForm,
 )
 
 MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -39,21 +40,28 @@ MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024   # 10 MB per file
 MAX_ATTACHMENTS_TOTAL = 25 * 1024 * 1024  # 25 MB total
 
 
-def _get_email_signature_html_and_image():
-    """Build HTML for the email signature with optional image embedded as base64 (works with Resend/API backends).
+def _get_email_signature_html_and_image(user):
+    """Build HTML for the email signature from the user's profile (optional image as base64).
     Returns (html_string, image_data) where image_data is (bytes, content_type) or None."""
-    settings_obj = AppSettings.load()
+    if not user or not getattr(user, 'is_authenticated', False):
+        return '', None
     parts = []
     image_data = None
-    if settings_obj.email_signature and settings_obj.email_signature.strip():
-        parts.append(settings_obj.email_signature.strip())
-    if settings_obj.signature_image:
+    try:
+        profile = getattr(user, 'profile', None)
+    except UserProfile.DoesNotExist:
+        profile = None
+    if not profile:
+        return '', None
+    if profile.email_signature and profile.email_signature.strip():
+        parts.append(profile.email_signature.strip())
+    if profile.signature_image:
         try:
-            settings_obj.signature_image.open('rb')
+            profile.signature_image.open('rb')
             try:
-                raw = settings_obj.signature_image.read()
+                raw = profile.signature_image.read()
                 content_type = (
-                    mimetypes.guess_type(settings_obj.signature_image.name)[0]
+                    mimetypes.guess_type(profile.signature_image.name)[0]
                     or 'image/png'
                 )
                 image_data = (raw, content_type)
@@ -63,7 +71,7 @@ def _get_email_signature_html_and_image():
                     f'<p><img src="{html.escape(data_url)}" alt="Signature" style="max-width:100%; height:auto;"></p>'
                 )
             finally:
-                settings_obj.signature_image.close()
+                profile.signature_image.close()
         except (ValueError, AttributeError, OSError):
             pass
     if not parts:
@@ -73,9 +81,10 @@ def _get_email_signature_html_and_image():
 
 
 def _send_email_with_attachments(to_list, subject, body, request):
-    """Build and send an EmailMessage with optional attachments. Appends app signature if configured.
+    """Build and send an EmailMessage with optional attachments. Appends the sending user's profile signature if set.
     Signature image is embedded as base64 in the HTML so it displays with Resend and other API backends."""
-    signature_html, signature_image_data = _get_email_signature_html_and_image()
+    user = request.user if request and getattr(request, 'user', None) else None
+    signature_html, signature_image_data = _get_email_signature_html_and_image(user)
     body_plain = body
     body_html = '<p>' + html.escape(body).replace('\n', '</p><p>') + '</p>' + signature_html if signature_html else None
 
@@ -1027,6 +1036,23 @@ def transaction_delete_task(request, pk, task_pk):
     task = get_object_or_404(TransactionTask, pk=task_pk, transaction=transaction)
     task.delete()
     return redirect(_transaction_detail_tasks_url(pk))
+
+
+# --- User profile ---
+
+@login_required
+def profile_edit(request):
+    """Edit current user's profile: email signature and optional signature image."""
+    profile, _ = UserProfile.objects.get_or_create(user=request.user, defaults={})
+    if request.method == 'POST':
+        form = UserProfileForm(request.POST, request.FILES, instance=profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Profile saved.')
+            return redirect('crm:profile')
+    else:
+        form = UserProfileForm(instance=profile)
+    return render(request, 'crm/profile_edit.html', {'form': form})
 
 
 # --- Application admin (separate from Django admin) ---

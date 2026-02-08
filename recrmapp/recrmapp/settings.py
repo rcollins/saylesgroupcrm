@@ -143,8 +143,19 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # Use S3-compatible storage in production (e.g. Vercel) so uploads don't hit read-only filesystem.
 # Set AWS_STORAGE_BUCKET_NAME (and credentials) in Vercel env; works with AWS S3 or Cloudflare R2.
+# Only use S3 when the bucket is set AND django-storages is installed (so local dev works without it).
+def _use_s3_storage():
+    if not os.environ.get('AWS_STORAGE_BUCKET_NAME'):
+        return False
+    try:
+        import storages.backends.s3  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+
 AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME')
-if AWS_STORAGE_BUCKET_NAME:
+if AWS_STORAGE_BUCKET_NAME and _use_s3_storage():
     STORAGES = {
         'default': {
             'BACKEND': 'storages.backends.s3.S3Storage',
@@ -158,6 +169,9 @@ if AWS_STORAGE_BUCKET_NAME:
                 #'endpoint_url': os.environ.get('AWS_S3_ENDPOINT_URL') or None,
             },
         },
+        'staticfiles': {
+            'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+        },
     }
     if os.environ.get('AWS_S3_CUSTOM_DOMAIN'):
         MEDIA_URL = f"https://{os.environ['AWS_S3_CUSTOM_DOMAIN']}/"
@@ -166,6 +180,9 @@ else:
         'default': {
             'BACKEND': 'django.core.files.storage.FileSystemStorage',
             'OPTIONS': {'location': MEDIA_ROOT, 'base_url': MEDIA_URL},
+        },
+        'staticfiles': {
+            'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
         },
     }
 

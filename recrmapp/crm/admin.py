@@ -2,6 +2,7 @@ from django.contrib import admin
 from .models import (
     Client, ClientNote, Contact, ContactNote, Lead, LeadNote, Property, PropertyNote, PropertyPhoto,
     Transaction, TransactionNote, TransactionParty, TransactionMilestone, TransactionTask,
+    UserProfile,
 )
 
 
@@ -102,6 +103,23 @@ def _transaction_gci(obj):
 
 
 _transaction_gci.short_description = "GCI"
+
+
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'has_signature', 'has_signature_image')
+    search_fields = ('user__username', 'user__email')
+    raw_id_fields = ('user',)
+
+    def has_signature(self, obj):
+        return bool(obj.email_signature and obj.email_signature.strip())
+    has_signature.short_description = 'Has signature'
+    has_signature.boolean = True
+
+    def has_signature_image(self, obj):
+        return bool(obj.signature_image)
+    has_signature_image.short_description = 'Has image'
+    has_signature_image.boolean = True
 
 
 @admin.register(Transaction)

@@ -3,7 +3,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
 from .models import (
-    AppSettings, ChoiceList,
+    AppSettings, ChoiceList, UserProfile,
     Client, ClientNote, Contact, ContactNote, Lead, LeadNote, Property, PropertyNote,
     Transaction, TransactionNote, TransactionParty, TransactionMilestone, TransactionTask,
 )
@@ -317,24 +317,43 @@ class TransactionTaskForm(forms.ModelForm):
         }
 
 
-# --- Application admin forms ---
+# --- User profile forms ---
 
-class AppSettingsForm(forms.ModelForm):
-    clear_logo = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
+class UserProfileForm(forms.ModelForm):
     clear_signature_image = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
 
     class Meta:
-        model = AppSettings
-        fields = ['app_name', 'logo', 'email_signature', 'signature_image']
+        model = UserProfile
+        fields = ['email_signature', 'signature_image']
         widgets = {
-            'app_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Application name'}),
-            'logo': forms.FileInput(attrs={'class': 'form-control'}),
             'email_signature': forms.Textarea(attrs={
                 'class': 'form-control font-monospace',
                 'rows': 8,
                 'placeholder': 'e.g. <p>Best regards,<br>Jane Smith</p>\n<a href="https://example.com">My website</a>\n<img src="https://example.com/logo.png" alt="Logo">',
             }),
             'signature_image': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
+        }
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        if self.cleaned_data.get('clear_signature_image'):
+            obj.signature_image = None
+        if commit:
+            obj.save()
+        return obj
+
+
+# --- Application admin forms ---
+
+class AppSettingsForm(forms.ModelForm):
+    clear_logo = forms.BooleanField(required=False, widget=forms.CheckboxInput(attrs={'class': 'form-check-input'}))
+
+    class Meta:
+        model = AppSettings
+        fields = ['app_name', 'logo']
+        widgets = {
+            'app_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Application name'}),
+            'logo': forms.FileInput(attrs={'class': 'form-control'}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -361,8 +380,6 @@ class AppSettingsForm(forms.ModelForm):
         obj = super().save(commit=False)
         if self.cleaned_data.get('clear_logo'):
             obj.logo = None
-        if self.cleaned_data.get('clear_signature_image'):
-            obj.signature_image = None
         obj.chart_colors = {
             'buyer': (self.cleaned_data.get('buyer_color') or '#1e4976').strip() or '#1e4976',
             'seller': (self.cleaned_data.get('seller_color') or '#137333').strip() or '#137333',
