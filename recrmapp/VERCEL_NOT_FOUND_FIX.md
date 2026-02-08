@@ -90,19 +90,44 @@ Common causes, in order of likelihood:
 
 ---
 
-## 4. Checklist before blaming routing
+## 4. Media uploads (images) — avoid 500 on upload
+
+Vercel’s filesystem is **read-only**. Saving uploads to `MEDIA_ROOT` fails and can cause 500 errors. Use **S3-compatible storage** in production.
+
+1. Create a bucket (e.g. **AWS S3** or **Cloudflare R2**).
+2. In Vercel → Project → Settings → Environment Variables, add:
+
+   **Required for any S3-compatible backend:**
+   - `AWS_STORAGE_BUCKET_NAME` — bucket name  
+   - `AWS_ACCESS_KEY_ID` — access key  
+   - `AWS_SECRET_ACCESS_KEY` — secret key  
+
+   **For AWS S3:**
+   - `AWS_S3_REGION_NAME` — e.g. `us-east-1`  
+
+   **For Cloudflare R2 (S3-compatible):**
+   - `AWS_S3_REGION_NAME` — use `auto`  
+   - `AWS_S3_ENDPOINT_URL` — e.g. `https://<account_id>.r2.cloudflarestorage.com`  
+   - (Optional) `AWS_S3_CUSTOM_DOMAIN` — custom domain for public URLs if you set one for the bucket  
+
+3. Redeploy. Uploads (logo, property photos, signature image) will go to the bucket and URLs will point there.
+
+---
+
+## 5. Checklist before blaming routing
 
 - [ ] `vercel.json` uses `"use": "@vercel/python"` and `"dest": "index.py"`.
 - [ ] `index.py` adds project root to `sys.path` and exposes `app = application`.
 - [ ] `ALLOWED_HOSTS` includes `.vercel.app` (or your domain).
 - [ ] Env vars set in Vercel: `SECRET_KEY`, `DATABASE_URL`, `DEBUG`.
+- [ ] For image uploads: `AWS_STORAGE_BUCKET_NAME`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` (and region/endpoint as above).
 - [ ] Database is Postgres (not SQLite).
 - [ ] Root Directory points at the folder that contains `index.py` and `vercel.json`.
 - [ ] Build succeeds; check Function logs for Django errors.
 
 ---
 
-## 5. References
+## 6. References
 
 - [Vercel Python runtime](https://vercel.com/docs/functions/runtimes/python) — official docs.
 - [Django on Vercel template](https://vercel.com/templates/python/django-hello-world) — official example.
