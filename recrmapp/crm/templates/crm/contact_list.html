@@ -69,8 +69,8 @@
                         </td>
                         <td><span class="pill pill-neutral">{{ choice_labels.contact_type|get_item:contact.contact_type }}</span></td>
                         <td class="text-muted">{{ contact.company|default:"—" }}</td>
-                        <td class="text-muted">{{ contact.email|default:"—" }}</td>
-                        <td class="text-muted">{{ contact.phone|default:"—" }}</td>
+                        <td class="text-muted">{% if contact.email %}<a href="mailto:{{ contact.email }}">{{ contact.email }}</a>{% else %}—{% endif %}</td>
+                        <td class="text-muted">{% if contact.phone %}<a href="tel:{{ contact.phone }}">{{ contact.phone }}</a>{% else %}—{% endif %}</td>
                         <td class="text-muted">{{ contact.city|default:"—" }}</td>
                         <td class="text-end">
                             <a href="{% url 'crm:contact_detail' contact.pk %}" class="btn btn-sm btn-outline-secondary">View</a>

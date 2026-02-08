@@ -41,11 +41,11 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="text-muted small">Email</label>
-                        <p class="mb-0">{{ lead.email|default:"—" }}</p>
+                        <p class="mb-0">{% if lead.email %}<a href="mailto:{{ lead.email }}">{{ lead.email }}</a>{% else %}—{% endif %}</p>
                     </div>
                     <div class="col-md-6">
                         <label class="text-muted small">Phone</label>
-                        <p class="mb-0">{{ lead.phone|default:"—" }}</p>
+                        <p class="mb-0">{% if lead.phone %}<a href="tel:{{ lead.phone }}">{{ lead.phone }}</a>{% else %}—{% endif %}</p>
                     </div>
                     <div class="col-md-6">
                         <label class="text-muted small">Referral</label>
@@ -71,7 +71,7 @@
                 <h5 class="mb-0 section-title">Send email</h5>
             </div>
             <div class="card-body">
-                <p class="text-muted small mb-3">To: {{ lead.email }}</p>
+                <p class="text-muted small mb-3">To: <a href="mailto:{{ lead.email }}">{{ lead.email }}</a></p>
                 <form method="post" action="{% url 'crm:lead_send_email' lead.pk %}" enctype="multipart/form-data">
                     {% csrf_token %}
                     <div class="mb-2">

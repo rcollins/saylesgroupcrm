@@ -85,8 +85,8 @@
                         </td>
                         <td><span class="pill pill-neutral">{{ choice_labels.lead_status|get_item:lead.status }}</span></td>
                         <td class="text-muted">{% if lead.referral %}{{ choice_labels.lead_referral|get_item:lead.referral }}{% else %}—{% endif %}</td>
-                        <td class="text-muted">{{ lead.email|default:"—" }}</td>
-                        <td class="text-muted">{{ lead.phone|default:"—" }}</td>
+                        <td class="text-muted">{% if lead.email %}<a href="mailto:{{ lead.email }}">{{ lead.email }}</a>{% else %}—{% endif %}</td>
+                        <td class="text-muted">{% if lead.phone %}<a href="tel:{{ lead.phone }}">{{ lead.phone }}</a>{% else %}—{% endif %}</td>
                         <td class="text-muted">{{ lead.city|default:"—" }}</td>
                         <td class="text-end">
                             <a href="{% url 'crm:lead_detail' lead.pk %}" class="btn btn-sm btn-outline-secondary">View</a>

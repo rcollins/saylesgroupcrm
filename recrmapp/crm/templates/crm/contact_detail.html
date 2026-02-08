@@ -32,11 +32,11 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="text-muted small">Email</label>
-                        <p class="mb-0">{{ contact.email|default:"—" }}</p>
+                        <p class="mb-0">{% if contact.email %}<a href="mailto:{{ contact.email }}">{{ contact.email }}</a>{% else %}—{% endif %}</p>
                     </div>
                     <div class="col-md-6">
                         <label class="text-muted small">Phone</label>
-                        <p class="mb-0">{{ contact.phone|default:"—" }}</p>
+                        <p class="mb-0">{% if contact.phone %}<a href="tel:{{ contact.phone }}">{{ contact.phone }}</a>{% else %}—{% endif %}</p>
                     </div>
                     {% if contact.company %}
                     <div class="col-12">
@@ -64,7 +64,7 @@
                 <h5 class="mb-0 section-title">Send email</h5>
             </div>
             <div class="card-body">
-                <p class="text-muted small mb-3">To: {{ contact.email }}</p>
+                <p class="text-muted small mb-3">To: <a href="mailto:{{ contact.email }}">{{ contact.email }}</a></p>
                 <form method="post" action="{% url 'crm:contact_send_email' contact.pk %}" enctype="multipart/form-data">
                     {% csrf_token %}
                     <div class="mb-2">

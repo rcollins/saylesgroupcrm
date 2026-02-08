@@ -78,8 +78,8 @@
                         </td>
                         <td><span class="pill pill-neutral">{{ choice_labels.client_type|get_item:client.client_type }}</span></td>
                         <td><span class="pill pill-primary">{{ choice_labels.client_status|get_item:client.status }}</span></td>
-                        <td class="text-muted">{{ client.email|default:"—" }}</td>
-                        <td class="text-muted">{{ client.phone|default:"—" }}</td>
+                        <td class="text-muted">{% if client.email %}<a href="mailto:{{ client.email }}">{{ client.email }}</a>{% else %}—{% endif %}</td>
+                        <td class="text-muted">{% if client.phone %}<a href="tel:{{ client.phone }}">{{ client.phone }}</a>{% else %}—{% endif %}</td>
                         <td class="text-muted">{{ client.city|default:"—" }}</td>
                         <td class="text-end">
                             <a href="{% url 'crm:client_detail' client.pk %}" class="btn btn-sm btn-outline-secondary">View</a>

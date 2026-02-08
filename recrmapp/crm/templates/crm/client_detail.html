@@ -32,11 +32,11 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="text-muted small">Email</label>
-                        <p class="mb-0">{{ client.email|default:"—" }}</p>
+                        <p class="mb-0">{% if client.email %}<a href="mailto:{{ client.email }}">{{ client.email }}</a>{% else %}—{% endif %}</p>
                     </div>
                     <div class="col-md-6">
                         <label class="text-muted small">Phone</label>
-                        <p class="mb-0">{{ client.phone|default:"—" }}</p>
+                        <p class="mb-0">{% if client.phone %}<a href="tel:{{ client.phone }}">{{ client.phone }}</a>{% else %}—{% endif %}</p>
                     </div>
                     <div class="col-12">
                         <label class="text-muted small">Address</label>
@@ -58,7 +58,7 @@
                 <h5 class="mb-0 section-title">Send email</h5>
             </div>
             <div class="card-body">
-                <p class="text-muted small mb-3">To: {{ client.email }}</p>
+                <p class="text-muted small mb-3">To: <a href="mailto:{{ client.email }}">{{ client.email }}</a></p>
                 <form method="post" action="{% url 'crm:client_send_email' client.pk %}" enctype="multipart/form-data">
                     {% csrf_token %}
                     <div class="mb-2">
@@ -93,11 +93,11 @@
                     </div>
                     <div class="col-md-6">
                         <label class="text-muted small">Email</label>
-                        <p class="mb-0">{{ client.spouse_email|default:"—" }}</p>
+                        <p class="mb-0">{% if client.spouse_email %}<a href="mailto:{{ client.spouse_email }}">{{ client.spouse_email }}</a>{% else %}—{% endif %}</p>
                     </div>
                     <div class="col-md-6">
                         <label class="text-muted small">Phone</label>
-                        <p class="mb-0">{{ client.spouse_phone|default:"—" }}</p>
+                        <p class="mb-0">{% if client.spouse_phone %}<a href="tel:{{ client.spouse_phone }}">{{ client.spouse_phone }}</a>{% else %}—{% endif %}</p>
                     </div>
                 </div>
             </div>
