@@ -928,25 +928,24 @@ def transaction_add_note(request, pk):
 
 @login_required
 def send_email_to_transaction(request, pk):
-    """Send an email to a transaction party or custom address (with optional attachments)."""
+    """Send an email to one or more transaction parties and/or additional addresses (with optional attachments)."""
     transaction = get_object_or_404(Transaction, pk=pk)
     if request.method != 'POST':
         return redirect('crm:transaction_detail', pk=pk)
-    form = SendTransactionEmailForm(request.POST, transaction=transaction)
+    form = SendTransactionEmailForm(request.POST, request.FILES, transaction=transaction)
     if form.is_valid():
-        to_email = (
-            form.cleaned_data['other_email'].strip()
-            if form.cleaned_data['recipient'] == '__other__'
-            else form.cleaned_data['recipient'].strip()
-        )
+        to_emails = form.cleaned_data['to_emails']
         try:
             _send_email_with_attachments(
-                [to_email],
+                to_emails,
                 form.cleaned_data['subject'],
                 form.cleaned_data['body'],
                 request,
             )
-            messages.success(request, f'Email sent to {to_email}.')
+            if len(to_emails) == 1:
+                messages.success(request, f'Email sent to {to_emails[0]}.')
+            else:
+                messages.success(request, f'Email sent to {len(to_emails)} recipients: {", ".join(to_emails)}.')
         except Exception as e:
             messages.error(request, str(e))
     else:

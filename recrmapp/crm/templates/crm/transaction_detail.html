@@ -195,28 +195,39 @@
                     <div class="card-body">
                         <form method="post" action="{% url 'crm:transaction_send_email' transaction.pk %}" enctype="multipart/form-data">
                             {% csrf_token %}
+                            {% if transaction_email_form.non_field_errors %}<div class="alert alert-danger mb-2">{{ transaction_email_form.non_field_errors }}</div>{% endif %}
                             <div class="mb-2">
-                                <label for="id_recipient" class="form-label">To</label>
-                                {{ transaction_email_form.recipient }}
-                                {% if transaction_email_form.recipient.errors %}<div class="invalid-feedback d-block">{{ transaction_email_form.recipient.errors.0 }}</div>{% endif %}
-                            </div>
-                            <div class="mb-2" id="other-email-wrap">
-                                <label for="id_other_email" class="form-label">Or enter email address</label>
-                                {{ transaction_email_form.other_email }}
-                                {% if transaction_email_form.other_email.errors %}<div class="invalid-feedback d-block">{{ transaction_email_form.other_email.errors.0 }}</div>{% endif %}
+                                <label class="form-label">To (select one or more)</label>
+                                <div class="form-control border-0 p-0">
+                                    {% for value, label in transaction_email_form.fields.recipients.choices %}
+                                    <div class="form-check">
+                                        <input type="checkbox" name="recipients" value="{{ value }}" id="id_recipients_{{ forloop.counter0 }}" class="form-check-input">
+                                        <label class="form-check-label" for="id_recipients_{{ forloop.counter0 }}">{{ label }}</label>
+                                    </div>
+                                    {% empty %}
+                                    <p class="text-muted small mb-0">No parties with email. Add parties below or use additional emails.</p>
+                                    {% endfor %}
+                                </div>
                             </div>
                             <div class="mb-2">
-                                <label for="id_tx_subject" class="form-label">Subject</label>
-                                <input type="text" name="subject" id="id_tx_subject" class="form-control" placeholder="Subject" required maxlength="200">
+                                <label for="id_other_emails" class="form-label">Additional emails (comma-separated)</label>
+                                {{ transaction_email_form.other_emails }}
+                                {% if transaction_email_form.other_emails.errors %}<div class="invalid-feedback d-block">{{ transaction_email_form.other_emails.errors.0 }}</div>{% endif %}
                             </div>
                             <div class="mb-2">
-                                <label for="id_tx_body" class="form-label">Message</label>
-                                <textarea name="body" id="id_tx_body" class="form-control" rows="4" placeholder="Message…" required></textarea>
+                                <label for="id_subject" class="form-label">Subject</label>
+                                {{ transaction_email_form.subject }}
+                                {% if transaction_email_form.subject.errors %}<div class="invalid-feedback d-block">{{ transaction_email_form.subject.errors.0 }}</div>{% endif %}
+                            </div>
+                            <div class="mb-2">
+                                <label for="id_body" class="form-label">Message</label>
+                                {{ transaction_email_form.body }}
+                                {% if transaction_email_form.body.errors %}<div class="invalid-feedback d-block">{{ transaction_email_form.body.errors.0 }}</div>{% endif %}
                             </div>
                             <div class="mb-3">
                                 <label for="id_tx_attachments" class="form-label">Attachments (optional)</label>
                                 <input type="file" name="attachments" id="id_tx_attachments" class="form-control" accept=".pdf,image/*" multiple>
-                                <span class="form-text small">PDF or images; max 10 MB per file, 25 MB total.</span>
+                                <span class="form-text small">You can select multiple files. PDF or images; max 10 MB per file, 25 MB total.</span>
                             </div>
                             <button type="submit" class="btn btn-crm-primary"><i class="bi bi-envelope me-1"></i> Send email</button>
                         </form>

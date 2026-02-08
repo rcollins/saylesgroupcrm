@@ -55,15 +55,18 @@ class SendEmailForm(forms.Form):
 
 
 class SendTransactionEmailForm(forms.Form):
-    """Send email to a transaction party or a custom address. Recipient choice + optional other_email."""
-    recipient = forms.ChoiceField(
+    """Send email to one or more transaction parties and/or additional addresses. Multiple attachments supported."""
+    recipients = forms.MultipleChoiceField(
         choices=[],
-        required=True,
-        widget=forms.Select(attrs={'class': 'form-select'}),
-    )
-    other_email = forms.EmailField(
         required=False,
-        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Or enter email address'}),
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
+    )
+    other_emails = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Additional emails (comma-separated)',
+        }),
     )
     subject = forms.CharField(
         max_length=200,
@@ -80,20 +83,39 @@ class SendTransactionEmailForm(forms.Form):
                 p for p in transaction.parties.all()
                 if getattr(p, 'display_email', None) and p.display_email != '—'
             ]
-            choices = [('', 'Select recipient…')]
-            for p in parties_with_email:
-                choices.append((p.display_email, f'{p.full_name} ({p.display_email})'))
-            choices.append(('__other__', 'Other (enter below)'))
-            self.fields['recipient'].choices = choices
+            choices = [(p.display_email, f'{p.full_name} ({p.display_email})') for p in parties_with_email]
+            self.fields['recipients'].choices = choices
+
+    def _parse_emails(self, raw):
+        """Parse comma/newline-separated string into list of stripped, non-empty emails."""
+        from django.core.exceptions import ValidationError as CoreValidationError
+        from django.core.validators import validate_email
+        if not raw or not raw.strip():
+            return []
+        emails = []
+        for part in raw.replace('\n', ',').split(','):
+            email = part.strip()
+            if not email:
+                continue
+            try:
+                validate_email(email)
+                emails.append(email)
+            except CoreValidationError:
+                continue
+        return emails
 
     def clean(self):
         from django.core.exceptions import ValidationError
         data = super().clean()
-        if data.get('recipient') == '__other__':
-            if not data.get('other_email') or not (data['other_email'] or '').strip():
-                raise ValidationError({'other_email': 'Enter an email address when selecting Other.'})
-        elif not data.get('recipient'):
-            raise ValidationError({'recipient': 'Select a recipient or enter an email address.'})
+        selected = list(data.get('recipients') or [])
+        other_raw = (data.get('other_emails') or '').strip()
+        other_list = self._parse_emails(other_raw)
+        to_emails = list(dict.fromkeys(selected + other_list))  # preserve order, no duplicates
+        if not to_emails:
+            raise ValidationError(
+                'Select at least one recipient and/or enter one or more email addresses (comma-separated).'
+            )
+        data['to_emails'] = to_emails
         return data
 
 
