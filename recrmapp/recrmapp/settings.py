@@ -154,8 +154,8 @@ if AWS_STORAGE_BUCKET_NAME:
                 'region_name': os.environ.get('AWS_S3_REGION_NAME') or None,
                 'default_acl': 'public-read',
                 'querystring_auth': False,
-                'custom_domain': os.environ.get('AWS_S3_CUSTOM_DOMAIN') or None,
-                'endpoint_url': os.environ.get('AWS_S3_ENDPOINT_URL') or None,
+                #'custom_domain': os.environ.get('AWS_S3_CUSTOM_DOMAIN') or None,
+                #'endpoint_url': os.environ.get('AWS_S3_ENDPOINT_URL') or None,
             },
         },
     }
