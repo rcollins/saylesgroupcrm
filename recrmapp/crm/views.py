@@ -33,6 +33,7 @@ from .forms import (
 )
 from .import_export import (
     EXPORT_COLUMNS,
+    MAX_IMPORT_FILE_SIZE,
     export_queryset_csv,
     export_queryset_xlsx,
     import_records,
@@ -44,6 +45,10 @@ MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'O
 ALLOWED_ATTACHMENT_EXTENSIONS = {'.pdf', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.tiff', '.tif'}
 MAX_ATTACHMENT_SIZE = 10 * 1024 * 1024   # 10 MB per file
 MAX_ATTACHMENTS_TOTAL = 25 * 1024 * 1024  # 25 MB total
+
+# Property photos: images only (prevent executable uploads)
+ALLOWED_PROPERTY_PHOTO_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff', '.tif'}
+MAX_PROPERTY_PHOTO_SIZE = 10 * 1024 * 1024  # 10 MB per image
 
 
 def _get_email_signature_html_and_image(user):
@@ -400,7 +405,7 @@ def property_add_note(request, pk):
 
 @login_required
 def property_add_photos(request, pk):
-    """Add one or more photos to a property. Redirects back to property detail."""
+    """Add one or more photos to a property. Redirects back to property detail. Only image types allowed."""
     property_obj = get_object_or_404(Property, pk=pk)
     if request.method != 'POST':
         return redirect('crm:property_detail', pk=pk)
@@ -409,10 +414,18 @@ def property_add_photos(request, pk):
     if files:
         next_order = property_obj.photos.count()
         for f in files:
-            if f and getattr(f, 'size', 0):
-                PropertyPhoto.objects.create(property=property_obj, image=f, order=next_order)
-                next_order += 1
-                created += 1
+            if not f or not getattr(f, 'size', 0):
+                continue
+            if getattr(f, 'size', 0) > MAX_PROPERTY_PHOTO_SIZE:
+                messages.error(request, f'File "{getattr(f, "name", "?")}" is too large (max 10 MB per image).')
+                return redirect('crm:property_detail', pk=pk)
+            ext = os.path.splitext(getattr(f, 'name', '') or '')[1].lower()
+            if ext not in ALLOWED_PROPERTY_PHOTO_EXTENSIONS:
+                messages.error(request, f'File type "{ext}" not allowed. Use images only (e.g. .jpg, .png).')
+                return redirect('crm:property_detail', pk=pk)
+            PropertyPhoto.objects.create(property=property_obj, image=f, order=next_order)
+            next_order += 1
+            created += 1
         if created:
             messages.success(request, f'Added {created} photo(s).')
     return redirect('crm:property_detail', pk=pk)
@@ -478,7 +491,10 @@ def send_email_to_contact(request, pk):
             )
             messages.success(request, f'Email sent to {contact.email}.')
         except Exception as e:
-            messages.error(request, str(e))
+            if settings.DEBUG:
+                messages.error(request, str(e))
+            else:
+                messages.error(request, 'Failed to send email. Please try again or check the recipient.')
     return redirect('crm:contact_detail', pk=pk)
 
 
@@ -502,7 +518,10 @@ def send_email_to_client(request, pk):
             )
             messages.success(request, f'Email sent to {client.email}.')
         except Exception as e:
-            messages.error(request, str(e))
+            if settings.DEBUG:
+                messages.error(request, str(e))
+            else:
+                messages.error(request, 'Failed to send email. Please try again or check the recipient.')
     return redirect('crm:client_detail', pk=pk)
 
 
@@ -526,13 +545,18 @@ def send_email_to_lead(request, pk):
             )
             messages.success(request, f'Email sent to {lead.email}.')
         except Exception as e:
-            messages.error(request, str(e))
+            if settings.DEBUG:
+                messages.error(request, str(e))
+            else:
+                messages.error(request, 'Failed to send email. Please try again or check the recipient.')
     return redirect('crm:lead_detail', pk=pk)
 
 
 @login_required
 def lead_convert_to_client(request, pk):
-    """Convert a lead to a client. Creates Client from lead data, links lead, redirects to client detail. Works with GET (link) or POST (button)."""
+    """Convert a lead to a client. Creates Client from lead data, links lead, redirects to client detail. POST only (CSRF-safe)."""
+    if request.method != 'POST':
+        return redirect('crm:lead_detail', pk=pk)
     lead = get_object_or_404(Lead, pk=pk)
     if lead.converted_to_client_id:
         return redirect('crm:client_detail', pk=lead.converted_to_client_id)
@@ -953,7 +977,10 @@ def send_email_to_transaction(request, pk):
             else:
                 messages.success(request, f'Email sent to {len(to_emails)} recipients: {", ".join(to_emails)}.')
         except Exception as e:
-            messages.error(request, str(e))
+            if settings.DEBUG:
+                messages.error(request, str(e))
+            else:
+                messages.error(request, 'Failed to send email. Please try again or check the recipients.')
     else:
         for field_errors in form.errors.values():
             for err in field_errors:
@@ -1024,7 +1051,9 @@ def transaction_add_task(request, pk):
 
 @login_required
 def transaction_toggle_task(request, pk, task_pk):
-    """Toggle task completed state."""
+    """Toggle task completed state. POST only (CSRF-safe)."""
+    if request.method != 'POST':
+        return redirect('crm:transaction_detail', pk=pk)
     transaction = get_object_or_404(Transaction, pk=pk)
     task = get_object_or_404(TransactionTask, pk=task_pk, transaction=transaction)
     task.completed = not task.completed
@@ -1090,18 +1119,29 @@ def _import_view(request, model_key, list_url_name, list_label):
     if request.method == 'POST':
         form = ImportForm(request.POST, request.FILES)
         if form.is_valid():
+            uploaded = request.FILES['file']
+            if uploaded.size > MAX_IMPORT_FILE_SIZE:
+                messages.error(request, f'File too large. Maximum size is {MAX_IMPORT_FILE_SIZE // (1024 * 1024)} MB.')
+                return redirect(list_url_name)
             fmt = form.cleaned_data['format_type']
-            result = import_records(request.FILES['file'], model_key, fmt)
+            result = import_records(uploaded, model_key, fmt)
             if result['errors'] and result['created'] == 0:
                 for err in result['errors'][:10]:
-                    messages.error(request, f"Row {err['row']}: {err['message']}")
+                    # Show row number and short message; avoid leaking internal details
+                    msg = err.get('message', 'Invalid data')
+                    if len(msg) > 200:
+                        msg = msg[:197] + '...'
+                    messages.error(request, f"Row {err['row']}: {msg}")
                 if len(result['errors']) > 10:
                     messages.error(request, f"... and {len(result['errors']) - 10} more errors.")
             else:
                 if result['created']:
                     messages.success(request, f"Imported {result['created']} {list_label}.")
                 for err in result['errors'][:5]:
-                    messages.warning(request, f"Row {err['row']}: {err['message']}")
+                    msg = err.get('message', 'Invalid data')
+                    if len(msg) > 200:
+                        msg = msg[:197] + '...'
+                    messages.warning(request, f"Row {err['row']}: {msg}")
                 if len(result['errors']) > 5:
                     messages.warning(request, f"... and {len(result['errors']) - 5} more row errors.")
             return redirect(list_url_name)
@@ -1242,7 +1282,10 @@ def app_admin_choice_add(request):
         messages.success(request, 'Choice added.')
     else:
         messages.error(request, 'Could not add choice. Check code and label.')
-    return redirect('crm:app_admin' + '#list-' + request.POST.get('list_type', ''))
+    list_type = request.POST.get('list_type', '')
+    allowed = [t[0] for t in ChoiceList.LIST_TYPE_CHOICES]
+    fragment = ('#list-' + list_type) if list_type in allowed else ''
+    return redirect('crm:app_admin' + fragment)
 
 
 def app_admin_choice_edit(request, pk):

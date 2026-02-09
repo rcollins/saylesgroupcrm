@@ -23,13 +23,19 @@ if not SECRET_KEY:
 # In development, leave DEBUG unset or set DEBUG=True so media/static are served; set DEBUG=False in production (e.g. Vercel).
 DEBUG = os.environ.get('DEBUG', 'True').lower() in ('1', 'true', 'yes')
 
-ALLOWED_HOSTS = [
-    '.vercel.app', 
-    '.now.sh', 
-    'localhost', 
-    '127.0.0.1',
-    'saylesgroupcrm.vercel.app',
-    '*']
+# In production, set ALLOWED_HOSTS via env (comma-separated) to avoid accepting any host.
+# Do not use '*' in production (enables host header attacks).
+_allowed = os.environ.get('ALLOWED_HOSTS', '').strip()
+if _allowed:
+    ALLOWED_HOSTS = [h.strip() for h in _allowed.split(',') if h.strip()]
+else:
+    ALLOWED_HOSTS = [
+        '.vercel.app',
+        '.now.sh',
+        'localhost',
+        '127.0.0.1',
+        'saylesgroupcrm.vercel.app',
+    ]
 
 
 # CSRF settings for Vercel
@@ -205,3 +211,12 @@ else:
     # No API key: use console backend so send_mail() doesn't fail (e.g. in dev)
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
     DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'robert@saylesgrouphomes.com')
+
+# Security hardening (recommended for production)
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_HTTPONLY = False  # False so JS can read for AJAX; use SameSite
+CSRF_COOKIE_SAMESITE = 'Lax'

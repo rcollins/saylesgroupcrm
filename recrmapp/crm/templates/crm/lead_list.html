@@ -106,7 +106,9 @@
                             <a href="{% url 'crm:lead_detail' lead.pk %}" class="btn btn-sm btn-outline-secondary">View</a>
                             <a href="{% url 'crm:lead_edit' lead.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
                             {% if not lead.is_converted %}
-                            <a href="{% url 'crm:lead_convert' lead.pk %}" class="btn btn-sm btn-crm-primary">Convert</a>
+                            <form method="post" action="{% url 'crm:lead_convert' lead.pk %}" class="d-inline">{% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-crm-primary">Convert</button>
+                            </form>
                             {% else %}
                             <a href="{% url 'crm:client_detail' lead.converted_to_client.pk %}" class="btn btn-sm btn-outline-secondary">View Client</a>
                             {% endif %}

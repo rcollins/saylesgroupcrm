@@ -11,6 +11,9 @@ from django.http import HttpResponse
 
 from .models import Lead, Client, Contact, Property
 
+# Max upload size for import files (DoS prevention)
+MAX_IMPORT_FILE_SIZE = 15 * 1024 * 1024  # 15 MB
+
 
 # --- Export column definitions: (field_name, header_label) ---
 EXPORT_COLUMNS = {
@@ -199,9 +202,13 @@ def _coerce_value(val, field_name, model_class):
 
 
 def _get_reader_for_file(uploaded_file, format_type):
-    """Return (headers, row_iter). format_type is 'csv' or 'xlsx'."""
+    """Return (headers, row_iter). format_type is 'csv' or 'xlsx'. Raises ValueError if file too large."""
+    if getattr(uploaded_file, 'size', 0) and uploaded_file.size > MAX_IMPORT_FILE_SIZE:
+        raise ValueError(f'File too large. Maximum size is {MAX_IMPORT_FILE_SIZE // (1024 * 1024)} MB.')
     if format_type == 'csv':
         content = uploaded_file.read()
+        if getattr(uploaded_file, 'size', 0) and len(content) > MAX_IMPORT_FILE_SIZE:
+            raise ValueError(f'File too large. Maximum size is {MAX_IMPORT_FILE_SIZE // (1024 * 1024)} MB.')
         if hasattr(content, 'decode'):
             content = content.decode('utf-8-sig')  # strip BOM
         reader = csv.DictReader(io.StringIO(content))
