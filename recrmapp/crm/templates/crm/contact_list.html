@@ -45,24 +45,38 @@
 </div>
 
 <div class="card card-crm">
+    <div id="contact-bulk-bar" class="card-body py-2 border-bottom border-secondary border-opacity-10 d-none">
+        <span id="contact-bulk-count" class="me-2">0</span> selected
+        <button type="submit" form="contact-bulk-form" class="btn btn-sm btn-outline-danger ms-2" onclick="var n = document.querySelectorAll('#contact-bulk-form input[name=ids]:checked').length; return n && confirm('Delete ' + n + ' selected contact(s)?');">
+            <i class="bi bi-trash me-1"></i> Delete selected
+        </button>
+    </div>
     <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-crm align-middle mb-0">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Type</th>
-                        <th>Company</th>
-                        <th>Email</th>
-                        <th>Phone</th>
-                        <th>City</th>
-                        <th class="text-end">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for contact in contacts %}
-                    <tr>
-                        <td>
+        <form id="contact-bulk-form" method="post" action="{% url 'crm:contact_bulk_delete' %}">
+            {% csrf_token %}
+            <div class="table-responsive">
+                <table class="table table-crm align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th class="pe-2" style="width:2.5rem;">
+                                <input type="checkbox" class="form-check-input" id="contact-select-all" title="Select all on this page" aria-label="Select all">
+                            </th>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Company</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>City</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for contact in contacts %}
+                        <tr>
+                            <td class="pe-2">
+                                <input type="checkbox" name="ids" value="{{ contact.pk }}" class="form-check-input contact-row-select" aria-label="Select {{ contact.full_name }}">
+                            </td>
+                            <td>
                             <a href="{% url 'crm:contact_detail' contact.pk %}" class="text-decoration-none fw-600 text-dark">
                                 {{ contact.full_name }}
                             </a>
@@ -79,15 +93,16 @@
                         </td>
                     </tr>
                     {% empty %}
-                    <tr>
-                        <td colspan="7" class="text-center text-muted py-5">
-                            No contacts yet. <a href="{% url 'crm:contact_add' %}" class="text-decoration-none fw-500">Add your first contact</a>.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-5">
+                                No contacts yet. <a href="{% url 'crm:contact_add' %}" class="text-decoration-none fw-500">Add your first contact</a>.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </form>
     </div>
     {% if page_obj.has_other_pages %}
     <div class="card-footer bg-light border-top border-secondary border-opacity-10 py-2">
@@ -105,4 +120,29 @@
     </div>
     {% endif %}
 </div>
+{% block extra_js %}
+<script>
+(function() {
+  var form = document.getElementById('contact-bulk-form');
+  if (!form) return;
+  var bar = document.getElementById('contact-bulk-bar');
+  var countEl = document.getElementById('contact-bulk-count');
+  var selectAll = document.getElementById('contact-select-all');
+  var checkboxes = form.querySelectorAll('input[name=ids]');
+  function updateBar() {
+    var n = form.querySelectorAll('input[name=ids]:checked').length;
+    countEl.textContent = n;
+    bar.classList.toggle('d-none', n === 0);
+    selectAll.checked = n > 0 && n === checkboxes.length;
+    selectAll.indeterminate = n > 0 && n < checkboxes.length;
+  }
+  checkboxes.forEach(function(cb) { cb.addEventListener('change', updateBar); });
+  selectAll.addEventListener('change', function() {
+    checkboxes.forEach(function(cb) { cb.checked = selectAll.checked; });
+    updateBar();
+  });
+  updateBar();
+})();
+</script>
+{% endblock %}
 {% endblock %}

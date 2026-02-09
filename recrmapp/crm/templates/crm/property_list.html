@@ -54,25 +54,39 @@
 </div>
 
 <div class="card card-crm">
+    <div id="property-bulk-bar" class="card-body py-2 border-bottom border-secondary border-opacity-10 d-none">
+        <span id="property-bulk-count" class="me-2">0</span> selected
+        <button type="submit" form="property-bulk-form" class="btn btn-sm btn-outline-danger ms-2" onclick="var n = document.querySelectorAll('#property-bulk-form input[name=ids]:checked').length; return n && confirm('Delete ' + n + ' selected propert(y/ies)?');">
+            <i class="bi bi-trash me-1"></i> Delete selected
+        </button>
+    </div>
     <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-crm align-middle mb-0">
-                <thead>
-                    <tr>
-                        <th>Title</th>
-                        <th>Address</th>
-                        <th>Type</th>
-                        <th>Status</th>
-                        <th>Beds / Baths</th>
-                        <th>Price</th>
-                        <th>Owner</th>
-                        <th class="text-end">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for property in properties %}
-                    <tr>
-                        <td>
+        <form id="property-bulk-form" method="post" action="{% url 'crm:property_bulk_delete' %}">
+            {% csrf_token %}
+            <div class="table-responsive">
+                <table class="table table-crm align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th class="pe-2" style="width:2.5rem;">
+                                <input type="checkbox" class="form-check-input" id="property-select-all" title="Select all on this page" aria-label="Select all">
+                            </th>
+                            <th>Title</th>
+                            <th>Address</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Beds / Baths</th>
+                            <th>Price</th>
+                            <th>Owner</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for property in properties %}
+                        <tr>
+                            <td class="pe-2">
+                                <input type="checkbox" name="ids" value="{{ property.pk }}" class="form-check-input property-row-select" aria-label="Select {{ property.title|default:property.address }}">
+                            </td>
+                            <td>
                             <a href="{% url 'crm:property_detail' property.pk %}" class="text-decoration-none fw-600 text-dark">
                                 {{ property.title|default:property.address }}
                             </a>
@@ -91,15 +105,16 @@
                         </td>
                     </tr>
                     {% empty %}
-                    <tr>
-                        <td colspan="8" class="text-center text-muted py-5">
-                            No properties yet. <a href="{% url 'crm:property_add' %}" class="text-decoration-none fw-500">Add your first property</a>.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-5">
+                                No properties yet. <a href="{% url 'crm:property_add' %}" class="text-decoration-none fw-500">Add your first property</a>.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </form>
     </div>
     {% if page_obj.has_other_pages %}
     <div class="card-footer bg-light border-top border-secondary border-opacity-10 py-2">
@@ -117,4 +132,29 @@
     </div>
     {% endif %}
 </div>
+{% block extra_js %}
+<script>
+(function() {
+  var form = document.getElementById('property-bulk-form');
+  if (!form) return;
+  var bar = document.getElementById('property-bulk-bar');
+  var countEl = document.getElementById('property-bulk-count');
+  var selectAll = document.getElementById('property-select-all');
+  var checkboxes = form.querySelectorAll('input[name=ids]');
+  function updateBar() {
+    var n = form.querySelectorAll('input[name=ids]:checked').length;
+    countEl.textContent = n;
+    bar.classList.toggle('d-none', n === 0);
+    selectAll.checked = n > 0 && n === checkboxes.length;
+    selectAll.indeterminate = n > 0 && n < checkboxes.length;
+  }
+  checkboxes.forEach(function(cb) { cb.addEventListener('change', updateBar); });
+  selectAll.addEventListener('change', function() {
+    checkboxes.forEach(function(cb) { cb.checked = selectAll.checked; });
+    updateBar();
+  });
+  updateBar();
+})();
+</script>
+{% endblock %}
 {% endblock %}

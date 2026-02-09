@@ -1135,6 +1135,49 @@ def import_properties(request):
     return _import_view(request, 'property', 'crm:property_list', 'properties')
 
 
+# --- Bulk delete ---
+
+def _bulk_delete(request, model_class, list_url_name, label_singular):
+    """POST with ids: delete selected records and redirect to list."""
+    if request.method != 'POST':
+        return redirect(list_url_name)
+    raw_ids = request.POST.getlist('ids')
+    ids = []
+    for i in raw_ids:
+        try:
+            ids.append(int(i))
+        except (ValueError, TypeError):
+            continue
+    if not ids:
+        messages.warning(request, 'No items selected.')
+        return redirect(list_url_name)
+    qs = model_class.objects.filter(pk__in=ids)
+    count = qs.count()
+    qs.delete()
+    messages.success(request, f'{count} {label_singular}{"s" if count != 1 else ""} deleted.')
+    return redirect(list_url_name)
+
+
+@login_required
+def bulk_delete_leads(request):
+    return _bulk_delete(request, Lead, 'crm:lead_list', 'lead')
+
+
+@login_required
+def bulk_delete_clients(request):
+    return _bulk_delete(request, Client, 'crm:client_list', 'client')
+
+
+@login_required
+def bulk_delete_contacts(request):
+    return _bulk_delete(request, Contact, 'crm:contact_list', 'contact')
+
+
+@login_required
+def bulk_delete_properties(request):
+    return _bulk_delete(request, Property, 'crm:property_list', 'property')
+
+
 # --- User profile ---
 
 @login_required
