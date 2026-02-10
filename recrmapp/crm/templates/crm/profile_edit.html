@@ -10,7 +10,7 @@
 </nav>
 
 <h1 class="page-title mb-4">Profile</h1>
-<p class="text-muted small mb-4">Manage your account: email signature (used when you send emails from the app) and change password.</p>
+<p class="text-muted small mb-4">Manage your account: email signature, optional Mailchimp or Constant Contact connection, and change password.</p>
 
 <div class="card card-crm mb-4">
     <div class="card-header">
@@ -39,7 +39,44 @@
                 </div>
                 {% endif %}
             </div>
-            <button type="submit" class="btn btn-crm-primary">Save profile</button>
+            <hr class="my-4">
+            <h6 class="fw-600 mb-3">Email marketing (optional)</h6>
+            <p class="form-text small text-muted mb-3">Connect one service to sync contacts for newsletters. Different agents can use Mailchimp or Constant Contact. Leave blank if you don't use either.</p>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <p class="small fw-600 text-muted mb-2">Mailchimp {% if form.instance.has_mailchimp_connected %}<span class="badge bg-success">Connected</span>{% endif %}</p>
+                    <div class="mb-2">
+                        <label for="id_mailchimp_api_key" class="form-label small">API key</label>
+                        <input type="password" name="mailchimp_api_key" class="form-control" id="id_mailchimp_api_key" placeholder="Leave blank to keep current" autocomplete="off">
+                        <p class="form-text small mb-0">Account → Extras → API keys</p>
+                    </div>
+                    <div>
+                        <label for="id_mailchimp_audience_id" class="form-label small">Audience (list) ID</label>
+                        <input type="text" name="mailchimp_audience_id" value="{{ form.mailchimp_audience_id.value|default:form.initial.mailchimp_audience_id|default:'' }}" class="form-control" id="id_mailchimp_audience_id" placeholder="e.g. abc123def4">
+                        <p class="form-text small mb-0">Audience → Settings → Audience ID</p>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <p class="small fw-600 text-muted mb-2">Constant Contact {% if form.instance.has_constant_contact_connected %}<span class="badge bg-success">Connected</span>{% endif %}</p>
+                    <div class="mb-2">
+                        <label for="id_constant_contact_api_key" class="form-label small">App Key (client ID)</label>
+                        <input type="text" name="constant_contact_api_key" value="{{ form.constant_contact_api_key.value|default:form.initial.constant_contact_api_key|default:'' }}" class="form-control" id="id_constant_contact_api_key" placeholder="From developer portal">
+                    </div>
+                    <div class="mb-2">
+                        <label for="id_constant_contact_api_secret" class="form-label small">App Secret</label>
+                        <input type="password" name="constant_contact_api_secret" class="form-control" id="id_constant_contact_api_secret" placeholder="Leave blank to keep current" autocomplete="off">
+                    </div>
+                    <div class="mb-2">
+                        <label for="id_constant_contact_access_token" class="form-label small">Access token</label>
+                        <input type="password" name="constant_contact_access_token" class="form-control" id="id_constant_contact_access_token" placeholder="Leave blank to keep current" autocomplete="off">
+                    </div>
+                    <div>
+                        <label for="id_constant_contact_refresh_token" class="form-label small">Refresh token</label>
+                        <input type="password" name="constant_contact_refresh_token" class="form-control" id="id_constant_contact_refresh_token" placeholder="Leave blank to keep current" autocomplete="off">
+                    </div>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-crm-primary mt-3">Save profile</button>
         </form>
     </div>
 </div>

@@ -632,7 +632,7 @@ class TransactionNote(models.Model):
 # --- User profile (per-user settings such as email signature) ---
 
 class UserProfile(models.Model):
-    """Per-user profile: email signature used when this user sends emails."""
+    """Per-user profile: email signature and optional Mailchimp/Constant Contact connection for email marketing."""
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -648,6 +648,36 @@ class UserProfile(models.Model):
         null=True,
         help_text='Optional image (e.g. logo or photo) shown at the end of your email signature.',
     )
+    # Mailchimp (optional): API key + Audience (list) ID. Leave blank if you use Constant Contact or neither.
+    mailchimp_api_key = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text='Mailchimp API key (Account → Extras → API keys). Leave blank to keep current or disable.',
+    )
+    mailchimp_audience_id = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text='Mailchimp Audience (list) ID from Audience → Settings.',
+    )
+    # Constant Contact (optional): OAuth2-style credentials. Leave blank if you use Mailchimp or neither.
+    constant_contact_api_key = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text='Constant Contact App Key (client ID from developer portal).',
+    )
+    constant_contact_api_secret = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text='Constant Contact App Secret. Leave blank to keep current.',
+    )
+    constant_contact_access_token = models.TextField(
+        blank=True,
+        help_text='Constant Contact OAuth2 access token. Leave blank to keep current.',
+    )
+    constant_contact_refresh_token = models.TextField(
+        blank=True,
+        help_text='Constant Contact OAuth2 refresh token. Leave blank to keep current.',
+    )
 
     class Meta:
         verbose_name = 'User profile'
@@ -655,6 +685,15 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f'Profile for {self.user.get_username()}'
+
+    def has_mailchimp_connected(self):
+        return bool(self.mailchimp_api_key and self.mailchimp_audience_id)
+
+    def has_constant_contact_connected(self):
+        return bool(
+            self.constant_contact_api_key
+            and (self.constant_contact_access_token or self.constant_contact_refresh_token)
+        )
 
 
 # --- Application admin (separate from Django admin) ---

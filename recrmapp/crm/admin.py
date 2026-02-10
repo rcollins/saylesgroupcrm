@@ -107,7 +107,7 @@ _transaction_gci.short_description = "GCI"
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'has_signature', 'has_signature_image')
+    list_display = ('user', 'has_signature', 'has_signature_image', 'has_mailchimp', 'has_constant_contact')
     search_fields = ('user__username', 'user__email')
     raw_id_fields = ('user',)
 
@@ -120,6 +120,16 @@ class UserProfileAdmin(admin.ModelAdmin):
         return bool(obj.signature_image)
     has_signature_image.short_description = 'Has image'
     has_signature_image.boolean = True
+
+    def has_mailchimp(self, obj):
+        return obj.has_mailchimp_connected()
+    has_mailchimp.short_description = 'Mailchimp'
+    has_mailchimp.boolean = True
+
+    def has_constant_contact(self, obj):
+        return obj.has_constant_contact_connected()
+    has_constant_contact.short_description = 'Constant Contact'
+    has_constant_contact.boolean = True
 
 
 @admin.register(Transaction)

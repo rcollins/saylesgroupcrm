@@ -361,7 +361,12 @@ class UserProfileForm(forms.ModelForm):
 
     class Meta:
         model = UserProfile
-        fields = ['email_signature', 'signature_image']
+        fields = [
+            'email_signature', 'signature_image',
+            'mailchimp_api_key', 'mailchimp_audience_id',
+            'constant_contact_api_key', 'constant_contact_api_secret',
+            'constant_contact_access_token', 'constant_contact_refresh_token',
+        ]
         widgets = {
             'email_signature': forms.Textarea(attrs={
                 'class': 'form-control font-monospace',
@@ -369,12 +374,40 @@ class UserProfileForm(forms.ModelForm):
                 'placeholder': 'e.g. <p>Best regards,<br>Jane Smith</p>\n<a href="https://example.com">My website</a>\n<img src="https://example.com/logo.png" alt="Logo">',
             }),
             'signature_image': forms.FileInput(attrs={'class': 'form-control', 'accept': 'image/*'}),
+            'mailchimp_api_key': forms.PasswordInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Leave blank to keep current',
+                'autocomplete': 'off',
+            }),
+            'mailchimp_audience_id': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g. abc123def4'}),
+            'constant_contact_api_key': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'App Key (client ID)'}),
+            'constant_contact_api_secret': forms.PasswordInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Leave blank to keep current',
+                'autocomplete': 'off',
+            }),
+            'constant_contact_access_token': forms.PasswordInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Leave blank to keep current',
+                'autocomplete': 'off',
+            }),
+            'constant_contact_refresh_token': forms.PasswordInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Leave blank to keep current',
+                'autocomplete': 'off',
+            }),
         }
 
     def save(self, commit=True):
         obj = super().save(commit=False)
         if self.cleaned_data.get('clear_signature_image'):
             obj.signature_image = None
+        # Don't overwrite secret fields with empty when user left them blank (password-style fields)
+        if obj.pk:
+            for field_name in ('mailchimp_api_key', 'constant_contact_api_secret',
+                              'constant_contact_access_token', 'constant_contact_refresh_token'):
+                if not self.cleaned_data.get(field_name):
+                    setattr(obj, field_name, getattr(self.instance, field_name, '') or '')
         if commit:
             obj.save()
         return obj
