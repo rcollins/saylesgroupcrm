@@ -1264,7 +1264,6 @@ def app_admin_dashboard(request):
         'choice_lists': choice_lists,
         'list_type_choices': ChoiceList.LIST_TYPE_CHOICES,
         'choice_form': ChoiceListForm(),
-        'inactivity_timeout_minutes': getattr(settings_obj, 'inactivity_timeout_minutes', 0) or 0,
     }
     return render(request, 'crm/app_admin.html', context)
 

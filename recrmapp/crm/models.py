@@ -669,11 +669,11 @@ class AppSettings(models.Model):
         blank=True,
         help_text='Keys: buyer, seller, dual (hex colors for dashboard charts)',
     )
-    # App Admin page: log out after this many minutes of inactivity. 0 or null = disabled.
+    # App-wide: log out after this many minutes of inactivity. 0 = disabled. Set in App Admin.
     inactivity_timeout_minutes = models.PositiveIntegerField(
         default=0,
         blank=True,
-        help_text='App Admin only: log out after this many minutes of no mouse/keyboard activity. Set to 0 to disable.',
+        help_text='Log out after this many minutes of no mouse/keyboard activity (entire app). Set to 0 to disable.',
     )
 
     class Meta:

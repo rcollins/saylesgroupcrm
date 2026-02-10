@@ -58,9 +58,9 @@
                 </div>
             </div>
             <div class="mb-3">
-                <label for="id_inactivity_timeout_minutes" class="form-label">Inactivity logout (App Admin page)</label>
+                <label for="id_inactivity_timeout_minutes" class="form-label">Inactivity logout (entire app)</label>
                 <input type="number" name="inactivity_timeout_minutes" value="{{ form.inactivity_timeout_minutes.value|default:form.inactivity_timeout_minutes.initial|default:0 }}" class="form-control" id="id_inactivity_timeout_minutes" min="0" max="120" style="max-width:6rem">
-                <p class="form-text small text-muted mb-0">Minutes of no mouse/keyboard activity before logging out on this page. Use 0 to disable.</p>
+                <p class="form-text small text-muted mb-0">Minutes of no mouse/keyboard activity before logging out. Applies to all pages. Use 0 to disable.</p>
             </div>
             <button type="submit" class="btn btn-crm-primary">Save application settings</button>
         </form>
@@ -129,39 +129,4 @@
         {% endfor %}
     </div>
 </div>
-
-{% if inactivity_timeout_minutes %}
-{# Hidden form for inactivity logout (POST with CSRF) #}
-<form id="app-admin-logout-form" method="post" action="{% url 'logout' %}" class="d-none">{% csrf_token %}</form>
-{% endif %}
-{% endblock %}
-
-{% block extra_js %}
-{% if inactivity_timeout_minutes %}
-<script>
-(function() {
-  var timeoutMinutes = {{ inactivity_timeout_minutes|default:0 }};
-  if (timeoutMinutes <= 0) return;
-  var timeoutMs = timeoutMinutes * 60 * 1000;
-  var timer = null;
-  var form = document.getElementById('app-admin-logout-form');
-
-  function resetTimer() {
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(function() {
-      if (form) form.submit();
-    }, timeoutMs);
-  }
-
-  function onActivity() {
-    resetTimer();
-  }
-
-  ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'].forEach(function(ev) {
-    document.addEventListener(ev, onActivity);
-  });
-  resetTimer();
-})();
-</script>
-{% endif %}
 {% endblock %}
