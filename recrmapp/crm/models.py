@@ -660,7 +660,7 @@ class UserProfile(models.Model):
 # --- Application admin (separate from Django admin) ---
 
 class AppSettings(models.Model):
-    """Singleton: application name, logo, and chart colors. Edited via Application Admin UI."""
+    """Singleton: application name, logo, chart colors, and app admin inactivity logout. Edited via Application Admin UI."""
     app_name = models.CharField(max_length=100, default='RE CRM')
     logo = models.FileField(upload_to='app_admin/', blank=True, null=True, help_text='Logo image (e.g. PNG, SVG)')
     # Chart colors: JSON e.g. {"buyer": "#1e4976", "seller": "#137333", "dual": "#b45309"}
@@ -668,6 +668,12 @@ class AppSettings(models.Model):
         default=dict,
         blank=True,
         help_text='Keys: buyer, seller, dual (hex colors for dashboard charts)',
+    )
+    # App Admin page: log out after this many minutes of inactivity. 0 or null = disabled.
+    inactivity_timeout_minutes = models.PositiveIntegerField(
+        default=0,
+        blank=True,
+        help_text='App Admin only: log out after this many minutes of no mouse/keyboard activity. Set to 0 to disable.',
     )
 
     class Meta:

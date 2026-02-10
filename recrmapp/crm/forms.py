@@ -387,10 +387,11 @@ class AppSettingsForm(forms.ModelForm):
 
     class Meta:
         model = AppSettings
-        fields = ['app_name', 'logo']
+        fields = ['app_name', 'logo', 'inactivity_timeout_minutes']
         widgets = {
             'app_name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Application name'}),
             'logo': forms.FileInput(attrs={'class': 'form-control'}),
+            'inactivity_timeout_minutes': forms.NumberInput(attrs={'class': 'form-control', 'min': 0, 'max': 120}),
         }
 
     def __init__(self, *args, **kwargs):
