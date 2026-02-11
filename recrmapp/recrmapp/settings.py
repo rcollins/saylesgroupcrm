@@ -1,7 +1,11 @@
 import os
+import warnings
 from pathlib import Path
 
 import dj_database_url
+
+# Suppress WhiteNoise warning when STATIC_ROOT is missing (e.g. on Vercel until staticfiles/ is committed).
+warnings.filterwarnings('ignore', message='No directory at')
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
