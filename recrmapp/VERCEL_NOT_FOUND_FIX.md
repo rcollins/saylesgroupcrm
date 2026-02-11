@@ -118,16 +118,22 @@ Vercel’s filesystem is **read-only**. Saving uploads to `MEDIA_ROOT` fails and
 
 With `DEBUG=False`, Django does not serve static files. This project uses **WhiteNoise** so the app serves its own static files (admin CSS/JS, etc.).
 
-**Required:** Run `collectstatic` during the Vercel build so admin (and any app static files) get correct styling.
+**Required:** Run `collectstatic` during the Vercel build so the `staticfiles/` directory exists in the deployment. If admin stays unstyled or shows black blocks, the build is not creating or including this directory.
 
-- In Vercel → Project → **Settings** → **General** → **Build & Development Settings**:
-  - Set **Build Command** to:  
-    `python manage.py collectstatic --noinput`  
-  - (If your Root Directory is the repo root and the app lives in a subfolder, use e.g. `cd recrmapp && python manage.py collectstatic --noinput` so it runs from the folder that contains `manage.py`.)
+1. **Root Directory** (Settings → General) must be the folder that contains `manage.py`, `index.py`, and `vercel.json` (e.g. `recrmapp` if your repo has the app in a subfolder).
 
-Redeploy. The admin at `/admin/` should then load with the correct theme (no plain HTML, no black blocks).
+2. **Build Command** (Settings → General → Build & Development Settings) — use one of:
+   - `bash build.sh` (uses the project’s build script), or  
+   - `python manage.py collectstatic --noinput`
 
-- `STATIC_ROOT` is set to `staticfiles/` and WhiteNoise middleware is enabled in settings.
+3. Redeploy and check the **Build** logs: you should see “Running collectstatic…” and “Collectstatic done.” If the build succeeds but admin is still unstyled, look for “staticfiles” in the build log to confirm the directory was created.
+
+4. **If admin is still unstyled (404s on /static/admin/...):** Vercel’s build may not include a directory created during the build. **Commit the static files** so they’re in the repo and always deployed:
+   - Locally (with Django installed):  
+     `python manage.py collectstatic --noinput`
+   - Commit the new `staticfiles/` directory (it’s not in `.gitignore` for this reason):  
+     `git add staticfiles/` then `git commit -m "Add collected static files for admin"`  
+   - Push and redeploy. Admin CSS/JS will then be served from the committed `staticfiles/`.
 
 ## 6. Checklist before blaming routing
 

@@ -141,9 +141,10 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
+# On Vercel: set Build Command to "python manage.py collectstatic --noinput" so staticfiles/ exists in the deployment.
 
-STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Media files (user uploads, e.g. property photos)
 MEDIA_URL = 'media/'
