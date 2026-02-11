@@ -268,6 +268,11 @@ class PropertyForm(forms.ModelForm):
             'featured': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if user is not None:
+            self.fields['owner'].queryset = Client.objects.filter(user=user).order_by('last_name', 'first_name')
+
 
 # --- Transaction forms ---
 
@@ -300,10 +305,12 @@ class TransactionForm(forms.ModelForm):
             'listing_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['status'].choices = [('', '---------')] + get_choices_for_list('transaction_status')
         self.fields['representation'].choices = [('', '---------')] + get_choices_for_list('transaction_representation')
+        if user is not None:
+            self.fields['property'].queryset = Property.objects.filter(user=user).order_by('-created_at')
 
 
 class TransactionPartyForm(forms.ModelForm):
@@ -317,6 +324,11 @@ class TransactionPartyForm(forms.ModelForm):
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'phone': forms.TextInput(attrs={'class': 'form-control'}),
         }
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if user is not None:
+            self.fields['client'].queryset = Client.objects.filter(user=user).order_by('last_name', 'first_name')
 
 
 class TransactionMilestoneForm(forms.ModelForm):

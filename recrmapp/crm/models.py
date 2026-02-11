@@ -60,6 +60,12 @@ class Client(models.Model):
         default=False,
         help_text='Include in newsletter sync to Mailchimp/Constant Contact when opted in.',
     )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='crm_clients',
+        help_text='User (agent) who owns this client record.',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -129,6 +135,12 @@ class Lead(models.Model):
     newsletter_opt_in = models.BooleanField(
         default=False,
         help_text='Include in newsletter sync to Mailchimp/Constant Contact when opted in.',
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='crm_leads',
+        help_text='User (agent) who owns this lead record.',
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -224,6 +236,12 @@ class Contact(models.Model):
     newsletter_opt_in = models.BooleanField(
         default=False,
         help_text='Include in newsletter sync to Mailchimp/Constant Contact when opted in.',
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='crm_contacts',
+        help_text='User (agent) who owns this contact record.',
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -345,6 +363,12 @@ class Property(models.Model):
     images = models.JSONField(default=list, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='crm_properties',
+        help_text='User (agent) who owns this property record.',
+    )
     owner = models.ForeignKey(
         Client,
         on_delete=models.CASCADE,

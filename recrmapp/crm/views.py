@@ -223,10 +223,11 @@ def home(request):
     from .models import AppSettings
     app_settings_obj = AppSettings.load()
     chart_colors = app_settings_obj.chart_colors or {}
-    client_count = Client.objects.count()
-    property_count = Property.objects.count()
-    lead_count = Lead.objects.filter(converted_to_client__isnull=True).count()
-    transaction_count = Transaction.objects.count()
+    user = request.user
+    client_count = Client.objects.filter(user=user).count()
+    property_count = Property.objects.filter(user=user).count()
+    lead_count = Lead.objects.filter(user=user, converted_to_client__isnull=True).count()
+    transaction_count = Transaction.objects.filter(property__user=user).count()
     get_params = request.GET
     now = timezone.now()
 
@@ -244,7 +245,7 @@ def home(request):
 
     # Sales by month and representation (buyer / seller / dual), with counts
     sales_queryset = (
-        Transaction.objects.filter(status='closed', updated_at__gte=sales_start, updated_at__lte=sales_end)
+        Transaction.objects.filter(property__user=user, status='closed', updated_at__gte=sales_start, updated_at__lte=sales_end)
         .annotate(month=TruncMonth('updated_at'))
         .values('month', 'representation')
         .annotate(total=Sum('final_sales_price'), count=Count('id'))
@@ -279,7 +280,7 @@ def home(request):
 
     # Income (GCI) by month and representation (buyer / seller / dual), with counts
     closed_txns = Transaction.objects.filter(
-        status='closed', updated_at__gte=income_start, updated_at__lte=income_end
+        property__user=user, status='closed', updated_at__gte=income_start, updated_at__lte=income_end
     ).select_related('property')
     gci_by_key = {(y, m): Decimal('0') for _, y, m in income_months}
     gci_by_rep = {(y, m, rep): Decimal('0') for _, y, m in income_months for rep in ('buyer', 'seller', 'dual')}
@@ -378,7 +379,7 @@ def signup(request):
 @login_required
 def client_add_note(request, pk):
     """Add a timestamped note to a client. Redirects back to client detail."""
-    client = get_object_or_404(Client, pk=pk)
+    client = get_object_or_404(Client, pk=pk, user=request.user)
     if request.method != 'POST':
         return redirect('crm:client_detail', pk=pk)
     form = ClientNoteForm(request.POST)
@@ -392,7 +393,7 @@ def client_add_note(request, pk):
 @login_required
 def property_add_note(request, pk):
     """Add a timestamped note to a property. Redirects back to property detail."""
-    property_obj = get_object_or_404(Property, pk=pk)
+    property_obj = get_object_or_404(Property, pk=pk, user=request.user)
     if request.method != 'POST':
         return redirect('crm:property_detail', pk=pk)
     form = PropertyNoteForm(request.POST)
@@ -406,7 +407,7 @@ def property_add_note(request, pk):
 @login_required
 def property_add_photos(request, pk):
     """Add one or more photos to a property. Redirects back to property detail. Only image types allowed."""
-    property_obj = get_object_or_404(Property, pk=pk)
+    property_obj = get_object_or_404(Property, pk=pk, user=request.user)
     if request.method != 'POST':
         return redirect('crm:property_detail', pk=pk)
     files = request.FILES.getlist('images')
@@ -436,7 +437,7 @@ def property_delete_photo(request, pk, photo_pk):
     """Remove a photo from a property (POST only)."""
     if request.method != 'POST':
         return redirect('crm:property_detail', pk=pk)
-    property_obj = get_object_or_404(Property, pk=pk)
+    property_obj = get_object_or_404(Property, pk=pk, user=request.user)
     photo = get_object_or_404(PropertyPhoto, pk=photo_pk, property=property_obj)
     photo.delete()
     messages.success(request, 'Photo removed.')
@@ -446,7 +447,7 @@ def property_delete_photo(request, pk, photo_pk):
 @login_required
 def lead_add_note(request, pk):
     """Add a timestamped note to a lead. Redirects back to lead detail."""
-    lead = get_object_or_404(Lead, pk=pk)
+    lead = get_object_or_404(Lead, pk=pk, user=request.user)
     if request.method != 'POST':
         return redirect('crm:lead_detail', pk=pk)
     form = LeadNoteForm(request.POST)
@@ -460,7 +461,7 @@ def lead_add_note(request, pk):
 @login_required
 def contact_add_note(request, pk):
     """Add a timestamped note to a contact. Redirects back to contact detail."""
-    contact = get_object_or_404(Contact, pk=pk)
+    contact = get_object_or_404(Contact, pk=pk, user=request.user)
     if request.method != 'POST':
         return redirect('crm:contact_detail', pk=pk)
     form = ContactNoteForm(request.POST)
@@ -474,7 +475,7 @@ def contact_add_note(request, pk):
 @login_required
 def send_email_to_contact(request, pk):
     """Send an email to the contact's email address (with optional attachments). Redirects back to contact detail."""
-    contact = get_object_or_404(Contact, pk=pk)
+    contact = get_object_or_404(Contact, pk=pk, user=request.user)
     if not contact.email or not contact.email.strip():
         messages.warning(request, 'This contact has no email address.')
         return redirect('crm:contact_detail', pk=pk)
@@ -501,7 +502,7 @@ def send_email_to_contact(request, pk):
 @login_required
 def send_email_to_client(request, pk):
     """Send an email to the client's email address (with optional attachments). Redirects back to client detail."""
-    client = get_object_or_404(Client, pk=pk)
+    client = get_object_or_404(Client, pk=pk, user=request.user)
     if not client.email or not client.email.strip():
         messages.warning(request, 'This client has no email address.')
         return redirect('crm:client_detail', pk=pk)
@@ -528,7 +529,7 @@ def send_email_to_client(request, pk):
 @login_required
 def send_email_to_lead(request, pk):
     """Send an email to the lead's email address (with optional attachments). Redirects back to lead detail."""
-    lead = get_object_or_404(Lead, pk=pk)
+    lead = get_object_or_404(Lead, pk=pk, user=request.user)
     if not lead.email or not lead.email.strip():
         messages.warning(request, 'This lead has no email address.')
         return redirect('crm:lead_detail', pk=pk)
@@ -557,10 +558,11 @@ def lead_convert_to_client(request, pk):
     """Convert a lead to a client. Creates Client from lead data, links lead, redirects to client detail. POST only (CSRF-safe)."""
     if request.method != 'POST':
         return redirect('crm:lead_detail', pk=pk)
-    lead = get_object_or_404(Lead, pk=pk)
+    lead = get_object_or_404(Lead, pk=pk, user=request.user)
     if lead.converted_to_client_id:
         return redirect('crm:client_detail', pk=lead.converted_to_client_id)
     client = Client.objects.create(
+        user=request.user,
         first_name=lead.first_name,
         last_name=lead.last_name,
         email=lead.email or '',
@@ -572,6 +574,7 @@ def lead_convert_to_client(request, pk):
         notes=lead.notes or '',
         client_type='buyer',
         status='potential',
+        newsletter_opt_in=lead.newsletter_opt_in,
     )
     lead.converted_to_client = client
     lead.save()
@@ -587,7 +590,7 @@ class ClientListView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        qs = super().get_queryset().filter(user=self.request.user)
         q = self.request.GET.get('q', '').strip()
         if q:
             qs = qs.filter(
@@ -622,12 +625,19 @@ class ClientDetailView(LoginRequiredMixin, DetailView):
     context_object_name = 'client'
     template_name = 'crm/client_detail.html'
 
+    def get_queryset(self):
+        return Client.objects.filter(user=self.request.user)
+
 
 class ClientCreateView(LoginRequiredMixin, CreateView):
     model = Client
     form_class = ClientForm
     template_name = 'crm/client_form.html'
     success_url = reverse_lazy('crm:client_list')
+
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        return super().form_valid(form)
 
 
 class ClientUpdateView(LoginRequiredMixin, UpdateView):
@@ -637,12 +647,18 @@ class ClientUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'crm/client_form.html'
     success_url = reverse_lazy('crm:client_list')
 
+    def get_queryset(self):
+        return Client.objects.filter(user=self.request.user)
+
 
 class ClientDeleteView(LoginRequiredMixin, DeleteView):
     model = Client
     context_object_name = 'client'
     template_name = 'crm/client_confirm_delete.html'
     success_url = reverse_lazy('crm:client_list')
+
+    def get_queryset(self):
+        return Client.objects.filter(user=self.request.user)
 
 
 # --- Contact views ---
@@ -654,7 +670,7 @@ class ContactListView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        qs = super().get_queryset().filter(user=self.request.user)
         q = self.request.GET.get('q', '').strip()
         if q:
             qs = qs.filter(
@@ -684,12 +700,19 @@ class ContactDetailView(LoginRequiredMixin, DetailView):
     context_object_name = 'contact'
     template_name = 'crm/contact_detail.html'
 
+    def get_queryset(self):
+        return Contact.objects.filter(user=self.request.user)
+
 
 class ContactCreateView(LoginRequiredMixin, CreateView):
     model = Contact
     form_class = ContactForm
     template_name = 'crm/contact_form.html'
     success_url = reverse_lazy('crm:contact_list')
+
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        return super().form_valid(form)
 
 
 class ContactUpdateView(LoginRequiredMixin, UpdateView):
@@ -699,12 +722,18 @@ class ContactUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'crm/contact_form.html'
     success_url = reverse_lazy('crm:contact_list')
 
+    def get_queryset(self):
+        return Contact.objects.filter(user=self.request.user)
+
 
 class ContactDeleteView(LoginRequiredMixin, DeleteView):
     model = Contact
     context_object_name = 'contact'
     template_name = 'crm/contact_confirm_delete.html'
     success_url = reverse_lazy('crm:contact_list')
+
+    def get_queryset(self):
+        return Contact.objects.filter(user=self.request.user)
 
 
 # --- Property views ---
@@ -716,7 +745,7 @@ class PropertyListView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        qs = super().get_queryset().filter(user=self.request.user)
         q = self.request.GET.get('q', '').strip()
         if q:
             qs = qs.filter(
@@ -751,6 +780,9 @@ class PropertyDetailView(LoginRequiredMixin, DetailView):
     context_object_name = 'property'
     template_name = 'crm/property_detail.html'
 
+    def get_queryset(self):
+        return Property.objects.filter(user=self.request.user)
+
 
 class PropertyCreateView(LoginRequiredMixin, CreateView):
     model = Property
@@ -765,6 +797,15 @@ class PropertyCreateView(LoginRequiredMixin, CreateView):
             initial['owner'] = client_id
         return initial
 
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        return super().form_valid(form)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
 
 class PropertyUpdateView(LoginRequiredMixin, UpdateView):
     model = Property
@@ -773,12 +814,23 @@ class PropertyUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'crm/property_form.html'
     success_url = reverse_lazy('crm:property_list')
 
+    def get_queryset(self):
+        return Property.objects.filter(user=self.request.user)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
 
 class PropertyDeleteView(LoginRequiredMixin, DeleteView):
     model = Property
     context_object_name = 'property'
     template_name = 'crm/property_confirm_delete.html'
     success_url = reverse_lazy('crm:property_list')
+
+    def get_queryset(self):
+        return Property.objects.filter(user=self.request.user)
 
 
 # --- Lead views ---
@@ -790,7 +842,7 @@ class LeadListView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        qs = super().get_queryset().filter(user=self.request.user)
         if not self.request.GET.get('show_all'):
             qs = qs.filter(converted_to_client__isnull=True)
         q = self.request.GET.get('q', '').strip()
@@ -831,12 +883,19 @@ class LeadDetailView(LoginRequiredMixin, DetailView):
     context_object_name = 'lead'
     template_name = 'crm/lead_detail.html'
 
+    def get_queryset(self):
+        return Lead.objects.filter(user=self.request.user)
+
 
 class LeadCreateView(LoginRequiredMixin, CreateView):
     model = Lead
     form_class = LeadForm
     template_name = 'crm/lead_form.html'
     success_url = reverse_lazy('crm:lead_list')
+
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        return super().form_valid(form)
 
 
 class LeadUpdateView(LoginRequiredMixin, UpdateView):
@@ -846,12 +905,18 @@ class LeadUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'crm/lead_form.html'
     success_url = reverse_lazy('crm:lead_list')
 
+    def get_queryset(self):
+        return Lead.objects.filter(user=self.request.user)
+
 
 class LeadDeleteView(LoginRequiredMixin, DeleteView):
     model = Lead
     context_object_name = 'lead'
     template_name = 'crm/lead_confirm_delete.html'
     success_url = reverse_lazy('crm:lead_list')
+
+    def get_queryset(self):
+        return Lead.objects.filter(user=self.request.user)
 
 
 # --- Transaction views ---
@@ -863,7 +928,7 @@ class TransactionListView(LoginRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        qs = super().get_queryset().select_related('property')
+        qs = super().get_queryset().filter(property__user=self.request.user).select_related('property')
         q = self.request.GET.get('q', '').strip()
         if q:
             qs = qs.filter(
@@ -900,9 +965,12 @@ class TransactionDetailView(LoginRequiredMixin, DetailView):
     context_object_name = 'transaction'
     template_name = 'crm/transaction_detail.html'
 
+    def get_queryset(self):
+        return Transaction.objects.filter(property__user=self.request.user).select_related('property')
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['party_form'] = TransactionPartyForm()
+        context['party_form'] = TransactionPartyForm(user=self.request.user)
         context['milestone_form'] = TransactionMilestoneForm()
         context['task_form'] = TransactionTaskForm()
         context['transaction_email_form'] = SendTransactionEmailForm(transaction=context['transaction'])
@@ -924,6 +992,11 @@ class TransactionCreateView(LoginRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse('crm:transaction_detail', kwargs={'pk': self.object.pk})
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
 
 class TransactionUpdateView(LoginRequiredMixin, UpdateView):
     model = Transaction
@@ -931,8 +1004,16 @@ class TransactionUpdateView(LoginRequiredMixin, UpdateView):
     context_object_name = 'transaction'
     template_name = 'crm/transaction_form.html'
 
+    def get_queryset(self):
+        return Transaction.objects.filter(property__user=self.request.user).select_related('property')
+
     def get_success_url(self):
         return reverse('crm:transaction_detail', kwargs={'pk': self.object.pk})
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
 
 
 class TransactionDeleteView(LoginRequiredMixin, DeleteView):
@@ -941,11 +1022,14 @@ class TransactionDeleteView(LoginRequiredMixin, DeleteView):
     template_name = 'crm/transaction_confirm_delete.html'
     success_url = reverse_lazy('crm:transaction_list')
 
+    def get_queryset(self):
+        return Transaction.objects.filter(property__user=self.request.user)
+
 
 @login_required
 def transaction_add_note(request, pk):
     """Add a timestamped note to a transaction. Redirects back to transaction detail."""
-    transaction = get_object_or_404(Transaction, pk=pk)
+    transaction = get_object_or_404(Transaction, pk=pk, property__user=request.user)
     if request.method != 'POST':
         return redirect('crm:transaction_detail', pk=pk)
     form = TransactionNoteForm(request.POST)
@@ -959,7 +1043,7 @@ def transaction_add_note(request, pk):
 @login_required
 def send_email_to_transaction(request, pk):
     """Send an email to one or more transaction parties and/or additional addresses (with optional attachments)."""
-    transaction = get_object_or_404(Transaction, pk=pk)
+    transaction = get_object_or_404(Transaction, pk=pk, property__user=request.user)
     if request.method != 'POST':
         return redirect('crm:transaction_detail', pk=pk)
     form = SendTransactionEmailForm(request.POST, request.FILES, transaction=transaction)
@@ -991,10 +1075,10 @@ def send_email_to_transaction(request, pk):
 @login_required
 def transaction_add_party(request, pk):
     """Add a party to a transaction. Redirects back to transaction detail."""
-    transaction = get_object_or_404(Transaction, pk=pk)
+    transaction = get_object_or_404(Transaction, pk=pk, property__user=request.user)
     if request.method != 'POST':
         return redirect('crm:transaction_detail', pk=pk)
-    form = TransactionPartyForm(request.POST)
+    form = TransactionPartyForm(request.POST, user=request.user)
     if form.is_valid():
         party = form.save(commit=False)
         party.transaction = transaction
@@ -1007,7 +1091,7 @@ def transaction_delete_party(request, pk, party_pk):
     """Remove a party from a transaction (POST only)."""
     if request.method != 'POST':
         return redirect('crm:transaction_detail', pk=pk)
-    transaction = get_object_or_404(Transaction, pk=pk)
+    transaction = get_object_or_404(Transaction, pk=pk, property__user=request.user)
     party = get_object_or_404(TransactionParty, pk=party_pk, transaction=transaction)
     party.delete()
     return redirect('crm:transaction_detail', pk=pk)
@@ -1016,7 +1100,7 @@ def transaction_delete_party(request, pk, party_pk):
 @login_required
 def transaction_add_milestone(request, pk):
     """Add a milestone to a transaction."""
-    transaction = get_object_or_404(Transaction, pk=pk)
+    transaction = get_object_or_404(Transaction, pk=pk, property__user=request.user)
     if request.method != 'POST':
         return redirect('crm:transaction_detail', pk=pk)
     form = TransactionMilestoneForm(request.POST)
@@ -1035,7 +1119,7 @@ def _transaction_detail_tasks_url(pk):
 @login_required
 def transaction_add_task(request, pk):
     """Add a task to a transaction."""
-    transaction = get_object_or_404(Transaction, pk=pk)
+    transaction = get_object_or_404(Transaction, pk=pk, property__user=request.user)
     if request.method != 'POST':
         return redirect('crm:transaction_detail', pk=pk)
     form = TransactionTaskForm(request.POST)
@@ -1054,7 +1138,7 @@ def transaction_toggle_task(request, pk, task_pk):
     """Toggle task completed state. POST only (CSRF-safe)."""
     if request.method != 'POST':
         return redirect('crm:transaction_detail', pk=pk)
-    transaction = get_object_or_404(Transaction, pk=pk)
+    transaction = get_object_or_404(Transaction, pk=pk, property__user=request.user)
     task = get_object_or_404(TransactionTask, pk=task_pk, transaction=transaction)
     task.completed = not task.completed
     task.save()
@@ -1066,7 +1150,7 @@ def transaction_delete_task(request, pk, task_pk):
     """Delete a task (POST only)."""
     if request.method != 'POST':
         return redirect('crm:transaction_detail', pk=pk)
-    transaction = get_object_or_404(Transaction, pk=pk)
+    transaction = get_object_or_404(Transaction, pk=pk, property__user=request.user)
     task = get_object_or_404(TransactionTask, pk=task_pk, transaction=transaction)
     task.delete()
     return redirect(_transaction_detail_tasks_url(pk))
@@ -1092,25 +1176,25 @@ def _export_response(request, model_key, queryset, list_url_name):
 
 @login_required
 def export_leads(request):
-    queryset = Lead.objects.all().order_by('last_name', 'first_name')
+    queryset = Lead.objects.filter(user=request.user).order_by('last_name', 'first_name')
     return _export_response(request, 'lead', queryset, 'crm:lead_list')
 
 
 @login_required
 def export_clients(request):
-    queryset = Client.objects.all().order_by('last_name', 'first_name')
+    queryset = Client.objects.filter(user=request.user).order_by('last_name', 'first_name')
     return _export_response(request, 'client', queryset, 'crm:client_list')
 
 
 @login_required
 def export_contacts(request):
-    queryset = Contact.objects.all().order_by('last_name', 'first_name')
+    queryset = Contact.objects.filter(user=request.user).order_by('last_name', 'first_name')
     return _export_response(request, 'contact', queryset, 'crm:contact_list')
 
 
 @login_required
 def export_properties(request):
-    queryset = Property.objects.all().order_by('-created_at')
+    queryset = Property.objects.filter(user=request.user).order_by('-created_at')
     return _export_response(request, 'property', queryset, 'crm:property_list')
 
 
@@ -1124,7 +1208,7 @@ def _import_view(request, model_key, list_url_name, list_label):
                 messages.error(request, f'File too large. Maximum size is {MAX_IMPORT_FILE_SIZE // (1024 * 1024)} MB.')
                 return redirect(list_url_name)
             fmt = form.cleaned_data['format_type']
-            result = import_records(uploaded, model_key, fmt)
+            result = import_records(uploaded, model_key, fmt, user=request.user)
             if result['errors'] and result['created'] == 0:
                 for err in result['errors'][:10]:
                     # Show row number and short message; avoid leaking internal details
@@ -1177,8 +1261,8 @@ def import_properties(request):
 
 # --- Bulk delete ---
 
-def _bulk_delete(request, model_class, list_url_name, label_singular):
-    """POST with ids: delete selected records and redirect to list."""
+def _bulk_delete(request, model_class, list_url_name, label_singular, user_filter=None):
+    """POST with ids: delete selected records and redirect to list. user_filter: dict e.g. {'user': request.user} or {'property__user': request.user}."""
     if request.method != 'POST':
         return redirect(list_url_name)
     raw_ids = request.POST.getlist('ids')
@@ -1191,7 +1275,7 @@ def _bulk_delete(request, model_class, list_url_name, label_singular):
     if not ids:
         messages.warning(request, 'No items selected.')
         return redirect(list_url_name)
-    qs = model_class.objects.filter(pk__in=ids)
+    qs = model_class.objects.filter(pk__in=ids, **user_filter)
     count = qs.count()
     qs.delete()
     messages.success(request, f'{count} {label_singular}{"s" if count != 1 else ""} deleted.')
@@ -1200,22 +1284,22 @@ def _bulk_delete(request, model_class, list_url_name, label_singular):
 
 @login_required
 def bulk_delete_leads(request):
-    return _bulk_delete(request, Lead, 'crm:lead_list', 'lead')
+    return _bulk_delete(request, Lead, 'crm:lead_list', 'lead', user_filter={'user': request.user})
 
 
 @login_required
 def bulk_delete_clients(request):
-    return _bulk_delete(request, Client, 'crm:client_list', 'client')
+    return _bulk_delete(request, Client, 'crm:client_list', 'client', user_filter={'user': request.user})
 
 
 @login_required
 def bulk_delete_contacts(request):
-    return _bulk_delete(request, Contact, 'crm:contact_list', 'contact')
+    return _bulk_delete(request, Contact, 'crm:contact_list', 'contact', user_filter={'user': request.user})
 
 
 @login_required
 def bulk_delete_properties(request):
-    return _bulk_delete(request, Property, 'crm:property_list', 'property')
+    return _bulk_delete(request, Property, 'crm:property_list', 'property', user_filter={'user': request.user})
 
 
 # --- User profile ---
@@ -1241,7 +1325,7 @@ def email_marketing_sync(request):
     profile, _ = UserProfile.objects.get_or_create(user=request.user, defaults={})
     from .email_marketing import get_opted_in_records, sync_to_mailchimp, sync_to_constant_contact
 
-    records = get_opted_in_records()
+    records = get_opted_in_records(user=request.user)
     if request.method == 'POST':
         provider = (request.POST.get('provider') or '').strip().lower()
         if provider == 'mailchimp':

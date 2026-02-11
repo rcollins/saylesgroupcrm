@@ -4,9 +4,12 @@ Varying pipeline status (available, under_contract, sold, off_market) and proper
 """
 from decimal import Decimal
 
+from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 
 from crm.models import Client, Property
+
+User = get_user_model()
 
 
 SAMPLE_PROPERTIES = [
@@ -228,9 +231,9 @@ SAMPLE_PROPERTIES = [
 ]
 
 
-def get_owner_by_last_name(last_name: str):
-    """Return first matching Client by last_name or None."""
-    return Client.objects.filter(last_name=last_name).first()
+def get_owner_by_last_name(user, last_name: str):
+    """Return first matching Client by user and last_name or None."""
+    return Client.objects.filter(user=user, last_name=last_name).first()
 
 
 class Command(BaseCommand):
@@ -244,14 +247,18 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        user = User.objects.order_by('pk').first()
+        if not user:
+            self.stdout.write(self.style.ERROR("No users in database. Create a user (e.g. in Django admin) first."))
+            return
         if options["clear"]:
-            deleted, _ = Property.objects.filter(mls_number__startswith="324-").delete()
+            deleted, _ = Property.objects.filter(user=user, mls_number__startswith="324-").delete()
             if deleted:
                 self.stdout.write(self.style.WARNING(f"Removed {deleted} existing sample property(ies)."))
 
         # Link a couple of properties to sample clients for realism
-        okonkwo = get_owner_by_last_name("Okonkwo")  # closed client - sold property
-        santos = get_owner_by_last_name("Santos")    # inactive - off_market property
+        okonkwo = get_owner_by_last_name(user, "Okonkwo")  # closed client - sold property
+        santos = get_owner_by_last_name(user, "Santos")    # inactive - off_market property
 
         # Map title -> owner for linking
         owner_by_title = {
@@ -263,8 +270,9 @@ class Command(BaseCommand):
         for data in SAMPLE_PROPERTIES:
             title = data["title"]
             owner = owner_by_title.get(title)
-            defaults = {**data, "owner": owner}
+            defaults = {**data, "owner": owner, "user": user}
             _, was_created = Property.objects.get_or_create(
+                user=user,
                 title=title,
                 address=data["address"],
                 city=data["city"],

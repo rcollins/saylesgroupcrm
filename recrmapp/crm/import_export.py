@@ -234,13 +234,16 @@ def _get_reader_for_file(uploaded_file, format_type):
     raise ValueError(f'Unsupported format: {format_type}')
 
 
-def import_records(uploaded_file, model_key, format_type):
+def import_records(uploaded_file, model_key, format_type, user=None):
     """
     Parse uploaded file and create records.
     model_key: 'lead' | 'client' | 'contact' | 'property'
     format_type: 'csv' | 'xlsx'
+    user: required for multi-user; assigned as owner of created records.
     Returns: dict with keys: created (int), errors (list of {row, message}).
     """
+    if user is None:
+        return {'created': 0, 'errors': [{'row': 0, 'message': 'User required for import.'}]}
     model_map = {'lead': Lead, 'client': Client, 'contact': Contact, 'property': Property}
     model_class = model_map.get(model_key)
     if not model_class:
@@ -290,6 +293,7 @@ def import_records(uploaded_file, model_key, format_type):
                     continue
                 if not kwargs.get('address'):
                     kwargs['address'] = kwargs.get('title', '')
+            kwargs['user'] = user
             model_class.objects.create(**kwargs)
             created += 1
         except Exception as e:

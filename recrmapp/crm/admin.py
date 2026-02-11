@@ -36,42 +36,81 @@ class ContactNoteInline(admin.TabularInline):
     ordering = ['-created_at']
 
 
+def _admin_queryset_user_scoped(queryset, request, user_field='user'):
+    """Restrict queryset to current user's records unless superuser."""
+    if request.user.is_superuser:
+        return queryset
+    return queryset.filter(**{user_field: request.user})
+
+
 @admin.register(Contact)
 class ContactAdmin(admin.ModelAdmin):
-    list_display = ('last_name', 'first_name', 'contact_type', 'company', 'email', 'phone', 'city', 'created_at')
-    list_filter = ('contact_type', 'state')
+    list_display = ('last_name', 'first_name', 'contact_type', 'company', 'email', 'phone', 'city', 'user', 'created_at')
+    list_filter = ('contact_type', 'state', 'user')
     search_fields = ('first_name', 'last_name', 'email', 'phone', 'company')
     ordering = ('last_name', 'first_name')
     inlines = [ContactNoteInline]
 
+    def get_queryset(self, request):
+        return _admin_queryset_user_scoped(super().get_queryset(request), request)
+
+    def save_model(self, request, obj, form, change):
+        if not change and not request.user.is_superuser:
+            obj.user = request.user
+        super().save_model(request, obj, form, change)
+
 
 @admin.register(Client)
 class ClientAdmin(admin.ModelAdmin):
-    list_display = ('last_name', 'first_name', 'email', 'phone', 'client_type', 'status', 'city', 'created_at')
-    list_filter = ('client_type', 'status', 'state')
+    list_display = ('last_name', 'first_name', 'email', 'phone', 'client_type', 'status', 'city', 'user', 'created_at')
+    list_filter = ('client_type', 'status', 'state', 'user')
     search_fields = ('first_name', 'last_name', 'email', 'phone', 'spouse_first_name', 'spouse_last_name')
     ordering = ('last_name', 'first_name')
     inlines = [ClientNoteInline]
 
+    def get_queryset(self, request):
+        return _admin_queryset_user_scoped(super().get_queryset(request), request)
+
+    def save_model(self, request, obj, form, change):
+        if not change and not request.user.is_superuser:
+            obj.user = request.user
+        super().save_model(request, obj, form, change)
+
 
 @admin.register(Lead)
 class LeadAdmin(admin.ModelAdmin):
-    list_display = ('last_name', 'first_name', 'email', 'phone', 'referral', 'status', 'city', 'converted_to_client', 'created_at')
-    list_filter = ('referral', 'status', 'state')
+    list_display = ('last_name', 'first_name', 'email', 'phone', 'referral', 'status', 'city', 'converted_to_client', 'user', 'created_at')
+    list_filter = ('referral', 'status', 'state', 'user')
     search_fields = ('first_name', 'last_name', 'email', 'phone')
     ordering = ('last_name', 'first_name')
     raw_id_fields = ('converted_to_client',)
     inlines = [LeadNoteInline]
 
+    def get_queryset(self, request):
+        return _admin_queryset_user_scoped(super().get_queryset(request), request)
+
+    def save_model(self, request, obj, form, change):
+        if not change and not request.user.is_superuser:
+            obj.user = request.user
+        super().save_model(request, obj, form, change)
+
 
 @admin.register(Property)
 class PropertyAdmin(admin.ModelAdmin):
-    list_display = ('title', 'address', 'city', 'property_type', 'status', 'formatted_price', 'owner', 'featured', 'created_at')
-    list_filter = ('property_type', 'status', 'state', 'featured')
+    list_display = ('title', 'address', 'city', 'property_type', 'status', 'formatted_price', 'owner', 'user', 'featured', 'created_at')
+    list_filter = ('property_type', 'status', 'state', 'featured', 'user')
     search_fields = ('title', 'address', 'city', 'state', 'zip_code', 'mls_number')
     raw_id_fields = ('owner',)
     ordering = ('-created_at',)
     inlines = [PropertyPhotoInline, PropertyNoteInline]
+
+    def get_queryset(self, request):
+        return _admin_queryset_user_scoped(super().get_queryset(request), request)
+
+    def save_model(self, request, obj, form, change):
+        if not change and not request.user.is_superuser:
+            obj.user = request.user
+        super().save_model(request, obj, form, change)
 
 
 class TransactionPartyInline(admin.TabularInline):
@@ -140,3 +179,9 @@ class TransactionAdmin(admin.ModelAdmin):
     raw_id_fields = ('property',)
     ordering = ('-created_at',)
     inlines = [TransactionPartyInline, TransactionMilestoneInline, TransactionTaskInline, TransactionNoteInline]
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(property__user=request.user)

@@ -2,9 +2,12 @@
 Load 10 fictional leads from Northern California.
 Varying pipeline status (new, attempted, in_progress, connected, unqualified, bad_timing) and referral source.
 """
+from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 
 from crm.models import Lead
+
+User = get_user_model()
 
 
 SAMPLE_LEADS = [
@@ -32,17 +35,22 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        user = User.objects.order_by('pk').first()
+        if not user:
+            self.stdout.write(self.style.ERROR("No users in database. Create a user (e.g. in Django admin) first."))
+            return
         emails = [lead["email"] for lead in SAMPLE_LEADS]
         if options["clear"]:
-            deleted, _ = Lead.objects.filter(email__in=emails).delete()
+            deleted, _ = Lead.objects.filter(user=user, email__in=emails).delete()
             if deleted:
                 self.stdout.write(self.style.WARNING(f"Removed {deleted} existing sample lead(s)."))
 
         created = 0
         for data in SAMPLE_LEADS:
             _, was_created = Lead.objects.get_or_create(
+                user=user,
                 email=data["email"],
-                defaults=data,
+                defaults={**data, "user": user},
             )
             if was_created:
                 created += 1

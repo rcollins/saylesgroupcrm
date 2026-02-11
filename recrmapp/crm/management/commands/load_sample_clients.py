@@ -4,9 +4,12 @@ Varying pipeline status (potential, active, closed, lost, inactive) and client t
 """
 from decimal import Decimal
 
+from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 
 from crm.models import Client
+
+User = get_user_model()
 
 
 SAMPLE_CLIENTS = [
@@ -39,17 +42,22 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        user = User.objects.order_by('pk').first()
+        if not user:
+            self.stdout.write(self.style.ERROR("No users in database. Create a user (e.g. in Django admin) first."))
+            return
         emails = [c["email"] for c in SAMPLE_CLIENTS]
         if options["clear"]:
-            deleted, _ = Client.objects.filter(email__in=emails).delete()
+            deleted, _ = Client.objects.filter(user=user, email__in=emails).delete()
             if deleted:
                 self.stdout.write(self.style.WARNING(f"Removed {deleted} existing sample client(s)."))
 
         created = 0
         for data in SAMPLE_CLIENTS:
             _, was_created = Client.objects.get_or_create(
+                user=user,
                 email=data["email"],
-                defaults=data,
+                defaults={**data, "user": user},
             )
             if was_created:
                 created += 1

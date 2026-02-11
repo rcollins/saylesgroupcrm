@@ -1,9 +1,12 @@
 """
 Load 10 fictional contacts: vendors, lenders, agents, title, inspector, attorney, etc.
 """
+from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 
 from crm.models import Contact
+
+User = get_user_model()
 
 
 SAMPLE_CONTACTS = [
@@ -161,17 +164,22 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        user = User.objects.order_by('pk').first()
+        if not user:
+            self.stdout.write(self.style.ERROR("No users in database. Create a user (e.g. in Django admin) first."))
+            return
         emails = [c["email"] for c in SAMPLE_CONTACTS]
         if options["clear"]:
-            deleted, _ = Contact.objects.filter(email__in=emails).delete()
+            deleted, _ = Contact.objects.filter(user=user, email__in=emails).delete()
             if deleted:
                 self.stdout.write(self.style.WARNING(f"Removed {deleted} existing sample contact(s)."))
 
         created = 0
         for data in SAMPLE_CONTACTS:
             _, was_created = Contact.objects.get_or_create(
+                user=user,
                 email=data["email"],
-                defaults=data,
+                defaults={**data, "user": user},
             )
             if was_created:
                 created += 1

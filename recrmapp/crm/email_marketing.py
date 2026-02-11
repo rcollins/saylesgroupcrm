@@ -139,15 +139,17 @@ def sync_to_constant_contact(profile, records):
     return synced, errors
 
 
-def get_opted_in_records(include_clients=True, include_leads=True, include_contacts=True):
+def get_opted_in_records(user, include_clients=True, include_leads=True, include_contacts=True):
     """
     Return a list of record dicts (email, first_name, last_name, phone, address, city, state, zip_code)
-    for all Client, Lead, and Contact with newsletter_opt_in=True and non-empty email.
+    for Client, Lead, and Contact with newsletter_opt_in=True and non-empty email, scoped to the given user.
     """
     from .models import Client, Lead, Contact
+    if user is None:
+        return []
     records = []
     if include_clients:
-        for c in Client.objects.filter(newsletter_opt_in=True).exclude(email='').exclude(email__isnull=True):
+        for c in Client.objects.filter(user=user, newsletter_opt_in=True).exclude(email='').exclude(email__isnull=True):
             records.append({
                 'email': c.email,
                 'first_name': c.first_name or '',
@@ -159,7 +161,7 @@ def get_opted_in_records(include_clients=True, include_leads=True, include_conta
                 'zip_code': c.zip_code or '',
             })
     if include_leads:
-        for c in Lead.objects.filter(newsletter_opt_in=True).exclude(email='').exclude(email__isnull=True):
+        for c in Lead.objects.filter(user=user, newsletter_opt_in=True).exclude(email='').exclude(email__isnull=True):
             records.append({
                 'email': c.email,
                 'first_name': c.first_name or '',
@@ -171,7 +173,7 @@ def get_opted_in_records(include_clients=True, include_leads=True, include_conta
                 'zip_code': c.zip_code or '',
             })
     if include_contacts:
-        for c in Contact.objects.filter(newsletter_opt_in=True).exclude(email='').exclude(email__isnull=True):
+        for c in Contact.objects.filter(user=user, newsletter_opt_in=True).exclude(email='').exclude(email__isnull=True):
             records.append({
                 'email': c.email,
                 'first_name': c.first_name or '',
