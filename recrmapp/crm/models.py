@@ -56,6 +56,10 @@ class Client(models.Model):
         max_digits=12, decimal_places=2, null=True, blank=True
     )
     notes = models.TextField(blank=True)
+    newsletter_opt_in = models.BooleanField(
+        default=False,
+        help_text='Include in newsletter sync to Mailchimp/Constant Contact when opted in.',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -122,6 +126,10 @@ class Lead(models.Model):
     state = models.CharField(max_length=50, blank=True)
     zip_code = models.CharField(max_length=10, blank=True)
     notes = models.TextField(blank=True)
+    newsletter_opt_in = models.BooleanField(
+        default=False,
+        help_text='Include in newsletter sync to Mailchimp/Constant Contact when opted in.',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     converted_to_client = models.OneToOneField(
@@ -213,6 +221,10 @@ class Contact(models.Model):
     state = models.CharField(max_length=50, blank=True)
     zip_code = models.CharField(max_length=10, blank=True)
     notes = models.TextField(blank=True)
+    newsletter_opt_in = models.BooleanField(
+        default=False,
+        help_text='Include in newsletter sync to Mailchimp/Constant Contact when opted in.',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -678,6 +690,11 @@ class UserProfile(models.Model):
         blank=True,
         help_text='Constant Contact OAuth2 refresh token. Leave blank to keep current.',
     )
+    constant_contact_list_id = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text='Constant Contact list ID to add synced contacts to (required for sync).',
+    )
 
     class Meta:
         verbose_name = 'User profile'
@@ -690,9 +707,11 @@ class UserProfile(models.Model):
         return bool(self.mailchimp_api_key and self.mailchimp_audience_id)
 
     def has_constant_contact_connected(self):
+        """True if credentials and list ID are set (required for sync)."""
         return bool(
             self.constant_contact_api_key
             and (self.constant_contact_access_token or self.constant_contact_refresh_token)
+            and self.constant_contact_list_id
         )
 
 

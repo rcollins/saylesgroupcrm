@@ -1235,6 +1235,58 @@ def profile_edit(request):
     return render(request, 'crm/profile_edit.html', {'form': form})
 
 
+@login_required
+def email_marketing_sync(request):
+    """Sync opted-in Clients, Leads, and Contacts to Mailchimp or Constant Contact (using current user's profile)."""
+    profile, _ = UserProfile.objects.get_or_create(user=request.user, defaults={})
+    from .email_marketing import get_opted_in_records, sync_to_mailchimp, sync_to_constant_contact
+
+    records = get_opted_in_records()
+    if request.method == 'POST':
+        provider = (request.POST.get('provider') or '').strip().lower()
+        if provider == 'mailchimp':
+            if not profile.has_mailchimp_connected():
+                messages.error(request, 'Mailchimp is not configured in your profile.')
+            elif not records:
+                messages.warning(request, 'No opted-in contacts to sync. Enable "Newsletter opt-in" on clients, leads, or contacts.')
+            else:
+                synced, errs = sync_to_mailchimp(profile, records)
+                if errs and synced == 0:
+                    messages.error(request, f'Sync failed: {errs[0].get("error", "Unknown error")}')
+                else:
+                    messages.success(request, f'Synced {synced} contact(s) to Mailchimp.')
+                    for e in errs[:5]:
+                        messages.warning(request, f'{e.get("email", "?")}: {e.get("error", "")[:80]}')
+                    if len(errs) > 5:
+                        messages.warning(request, f'… and {len(errs) - 5} more error(s).')
+            return redirect('crm:email_marketing_sync')
+        if provider == 'constant_contact':
+            if not profile.has_constant_contact_connected():
+                messages.error(request, 'Constant Contact is not configured in your profile (including List ID).')
+            elif not records:
+                messages.warning(request, 'No opted-in contacts to sync. Enable "Newsletter opt-in" on clients, leads, or contacts.')
+            else:
+                synced, errs = sync_to_constant_contact(profile, records)
+                if errs and synced == 0:
+                    messages.error(request, f'Sync failed: {errs[0].get("error", "Unknown error")}')
+                else:
+                    messages.success(request, f'Synced {synced} contact(s) to Constant Contact.')
+                    for e in errs[:5]:
+                        messages.warning(request, f'{e.get("email", "?")}: {e.get("error", "")[:80]}')
+                    if len(errs) > 5:
+                        messages.warning(request, f'… and {len(errs) - 5} more error(s).')
+            return redirect('crm:email_marketing_sync')
+        return redirect('crm:email_marketing_sync')
+
+    context = {
+        'profile': profile,
+        'opted_in_count': len(records),
+        'has_mailchimp': profile.has_mailchimp_connected(),
+        'has_constant_contact': profile.has_constant_contact_connected(),
+    }
+    return render(request, 'crm/email_marketing_sync.html', context)
+
+
 # --- Application admin (separate from Django admin) ---
 
 def app_admin_dashboard(request):

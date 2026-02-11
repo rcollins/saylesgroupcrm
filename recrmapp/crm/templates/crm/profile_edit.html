@@ -10,7 +10,7 @@
 </nav>
 
 <h1 class="page-title mb-4">Profile</h1>
-<p class="text-muted small mb-4">Manage your account: email signature, optional Mailchimp or Constant Contact connection, and change password.</p>
+<p class="text-muted small mb-4">Manage your account: email signature, optional Mailchimp or Constant Contact connection, and change password. After connecting a service, <a href="{% url 'crm:email_marketing_sync' %}">sync opted-in contacts</a> to your list.</p>
 
 <div class="card card-crm mb-4">
     <div class="card-header">
@@ -70,9 +70,14 @@
                         <label for="id_constant_contact_access_token" class="form-label small">Access token</label>
                         <input type="password" name="constant_contact_access_token" class="form-control" id="id_constant_contact_access_token" placeholder="Leave blank to keep current" autocomplete="off">
                     </div>
-                    <div>
+                    <div class="mb-2">
                         <label for="id_constant_contact_refresh_token" class="form-label small">Refresh token</label>
                         <input type="password" name="constant_contact_refresh_token" class="form-control" id="id_constant_contact_refresh_token" placeholder="Leave blank to keep current" autocomplete="off">
+                    </div>
+                    <div>
+                        <label for="id_constant_contact_list_id" class="form-label small">List ID</label>
+                        <input type="text" name="constant_contact_list_id" value="{{ form.constant_contact_list_id.value|default:form.initial.constant_contact_list_id|default:'' }}" class="form-control" id="id_constant_contact_list_id" placeholder="Required for sync">
+                        <p class="form-text small mb-0">List to add synced contacts to</p>
                     </div>
                 </div>
             </div>

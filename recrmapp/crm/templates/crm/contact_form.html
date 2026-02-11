@@ -85,6 +85,10 @@
             <h5 class="mb-0 section-title">Notes</h5>
         </div>
         <div class="card-body">
+            <div class="form-check mb-3">
+                {{ form.newsletter_opt_in }}
+                <label for="id_newsletter_opt_in" class="form-check-label">Newsletter opt-in (include in Mailchimp/Constant Contact sync)</label>
+            </div>
             <label for="id_notes" class="form-label">Notes</label>
             {{ form.notes }}
         </div>

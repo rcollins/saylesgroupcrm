@@ -62,6 +62,12 @@
                     {{ form.zip_code }}
                 </div>
                 <div class="col-12">
+                    <div class="form-check">
+                        {{ form.newsletter_opt_in }}
+                        <label for="id_newsletter_opt_in" class="form-check-label">Newsletter opt-in (include in Mailchimp/Constant Contact sync)</label>
+                    </div>
+                </div>
+                <div class="col-12">
                     <label for="id_notes" class="form-label">Notes</label>
                     {{ form.notes }}
                 </div>

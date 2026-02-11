@@ -1,0 +1,57 @@
+{% extends 'crm/base.html' %}
+{% block title %}Newsletter sync{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'crm:home' %}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'crm:profile' %}">Profile</a></li>
+        <li class="breadcrumb-item active">Newsletter sync</li>
+    </ol>
+</nav>
+
+<h1 class="page-title mb-4">Newsletter sync</h1>
+<p class="text-muted small mb-4">Push opted-in clients, leads, and contacts to your Mailchimp or Constant Contact list. Configure API keys and list IDs in your <a href="{% url 'crm:profile' %}">Profile</a>. Only records with "Newsletter opt-in" checked and an email address are synced.</p>
+
+<div class="card card-crm mb-4">
+    <div class="card-header">
+        <h5 class="mb-0 section-title">Sync to email marketing</h5>
+        <p class="section-subtitle mb-0">Opted-in records: <strong>{{ opted_in_count }}</strong></p>
+    </div>
+    <div class="card-body">
+        {% if opted_in_count == 0 %}
+        <p class="text-muted mb-3">No contacts are opted in. Edit clients, leads, or contacts and check "Newsletter opt-in" to include them in sync.</p>
+        {% endif %}
+
+        {% if has_mailchimp %}
+        <div class="mb-3">
+            <form method="post" action="{% url 'crm:email_marketing_sync' %}" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="provider" value="mailchimp">
+                <button type="submit" class="btn btn-crm-primary" {% if opted_in_count == 0 %}disabled{% endif %}>
+                    <i class="bi bi-envelope me-1"></i> Sync to Mailchimp
+                </button>
+            </form>
+            <span class="text-muted small ms-2">Uses your Mailchimp API key and Audience ID from Profile.</span>
+        </div>
+        {% else %}
+        <p class="text-muted small mb-2">Mailchimp: not configured. Add API key and Audience ID in <a href="{% url 'crm:profile' %}">Profile</a>.</p>
+        {% endif %}
+
+        {% if has_constant_contact %}
+        <div>
+            <form method="post" action="{% url 'crm:email_marketing_sync' %}" class="d-inline">
+                {% csrf_token %}
+                <input type="hidden" name="provider" value="constant_contact">
+                <button type="submit" class="btn btn-crm-primary" {% if opted_in_count == 0 %}disabled{% endif %}>
+                    <i class="bi bi-envelope me-1"></i> Sync to Constant Contact
+                </button>
+            </form>
+            <span class="text-muted small ms-2">Uses your Constant Contact tokens and List ID from Profile.</span>
+        </div>
+        {% else %}
+        <p class="text-muted small mb-0">Constant Contact: not configured. Add App Key, tokens, and List ID in <a href="{% url 'crm:profile' %}">Profile</a>.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

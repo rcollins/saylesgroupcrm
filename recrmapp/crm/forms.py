@@ -126,6 +126,7 @@ class ContactForm(forms.ModelForm):
             'first_name', 'last_name', 'email', 'phone',
             'contact_type', 'company',
             'address', 'city', 'state', 'zip_code',
+            'newsletter_opt_in',
             'notes',
         ]
         widgets = {
@@ -139,6 +140,7 @@ class ContactForm(forms.ModelForm):
             'city': forms.TextInput(attrs={'class': 'form-control'}),
             'state': forms.TextInput(attrs={'class': 'form-control'}),
             'zip_code': forms.TextInput(attrs={'class': 'form-control'}),
+            'newsletter_opt_in': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
@@ -170,7 +172,7 @@ class LeadForm(forms.ModelForm):
         model = Lead
         fields = [
             'first_name', 'last_name', 'email', 'phone', 'referral', 'status',
-            'address', 'city', 'state', 'zip_code', 'notes',
+            'address', 'city', 'state', 'zip_code', 'newsletter_opt_in', 'notes',
         ]
         widgets = {
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
@@ -183,6 +185,7 @@ class LeadForm(forms.ModelForm):
             'city': forms.TextInput(attrs={'class': 'form-control'}),
             'state': forms.TextInput(attrs={'class': 'form-control'}),
             'zip_code': forms.TextInput(attrs={'class': 'form-control'}),
+            'newsletter_opt_in': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
@@ -201,6 +204,7 @@ class ClientForm(forms.ModelForm):
             'client_type', 'status',
             'address', 'city', 'state', 'zip_code',
             'budget_min', 'budget_max',
+            'newsletter_opt_in',
             'notes',
         ]
         widgets = {
@@ -220,6 +224,7 @@ class ClientForm(forms.ModelForm):
             'zip_code': forms.TextInput(attrs={'class': 'form-control'}),
             'budget_min': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'Min'}),
             'budget_max': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01', 'placeholder': 'Max'}),
+            'newsletter_opt_in': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
 
@@ -366,6 +371,7 @@ class UserProfileForm(forms.ModelForm):
             'mailchimp_api_key', 'mailchimp_audience_id',
             'constant_contact_api_key', 'constant_contact_api_secret',
             'constant_contact_access_token', 'constant_contact_refresh_token',
+            'constant_contact_list_id',
         ]
         widgets = {
             'email_signature': forms.Textarea(attrs={
@@ -396,6 +402,7 @@ class UserProfileForm(forms.ModelForm):
                 'placeholder': 'Leave blank to keep current',
                 'autocomplete': 'off',
             }),
+            'constant_contact_list_id': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'List ID (required for sync)'}),
         }
 
     def save(self, commit=True):
