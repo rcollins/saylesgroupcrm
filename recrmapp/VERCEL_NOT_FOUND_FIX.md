@@ -114,10 +114,26 @@ Vercel’s filesystem is **read-only**. Saving uploads to `MEDIA_ROOT` fails and
 
 ---
 
-## 5. Checklist before blaming routing
+## 5. Django admin theme / static files (CSS, JS) in production
+
+With `DEBUG=False`, Django does not serve static files. This project uses **WhiteNoise** so the app serves its own static files (admin CSS/JS, etc.).
+
+**Required:** Run `collectstatic` during the Vercel build so admin (and any app static files) get correct styling.
+
+- In Vercel → Project → **Settings** → **General** → **Build & Development Settings**:
+  - Set **Build Command** to:  
+    `python manage.py collectstatic --noinput`  
+  - (If your Root Directory is the repo root and the app lives in a subfolder, use e.g. `cd recrmapp && python manage.py collectstatic --noinput` so it runs from the folder that contains `manage.py`.)
+
+Redeploy. The admin at `/admin/` should then load with the correct theme (no plain HTML, no black blocks).
+
+- `STATIC_ROOT` is set to `staticfiles/` and WhiteNoise middleware is enabled in settings.
+
+## 6. Checklist before blaming routing
 
 - [ ] `vercel.json` uses `"use": "@vercel/python"` and `"dest": "index.py"`.
 - [ ] `index.py` adds project root to `sys.path` and exposes `app = application`.
+- [ ] **Build Command** runs `python manage.py collectstatic --noinput` (from the directory that has `manage.py`).
 - [ ] `ALLOWED_HOSTS` includes `.vercel.app` (or your domain).
 - [ ] Env vars set in Vercel: `SECRET_KEY`, `DATABASE_URL`, `DEBUG`.
 - [ ] For image uploads: `AWS_STORAGE_BUCKET_NAME`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` (and region/endpoint as above).
@@ -127,7 +143,7 @@ Vercel’s filesystem is **read-only**. Saving uploads to `MEDIA_ROOT` fails and
 
 ---
 
-## 6. References
+## 7. References
 
 - [Vercel Python runtime](https://vercel.com/docs/functions/runtimes/python) — official docs.
 - [Django on Vercel template](https://vercel.com/templates/python/django-hello-world) — official example.
