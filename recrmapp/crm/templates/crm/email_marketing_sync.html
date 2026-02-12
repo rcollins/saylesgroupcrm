@@ -21,6 +21,12 @@
     <div class="card-body">
         {% if opted_in_count == 0 %}
         <p class="text-muted mb-3">No contacts are opted in. Edit clients, leads, or contacts and check "Newsletter opt-in" to include them in sync.</p>
+        {% else %}
+        <p class="mb-3">Review who will be synced, then confirm from the preview page.</p>
+        <a href="{% url 'crm:email_marketing_sync_preview' %}" class="btn btn-crm-primary mb-3" role="button">
+            <i class="bi bi-eye me-1"></i> Preview who will be synced
+        </a>
+        <p class="text-muted small mb-3">Or sync immediately without preview:</p>
         {% endif %}
 
         {% if has_mailchimp %}
@@ -28,7 +34,7 @@
             <form method="post" action="{% url 'crm:email_marketing_sync' %}" class="d-inline">
                 {% csrf_token %}
                 <input type="hidden" name="provider" value="mailchimp">
-                <button type="submit" class="btn btn-crm-primary" {% if opted_in_count == 0 %}disabled{% endif %}>
+                <button type="submit" class="btn btn-outline-primary btn-sm" {% if opted_in_count == 0 %}disabled{% endif %}>
                     <i class="bi bi-envelope me-1"></i> Sync to Mailchimp
                 </button>
             </form>
@@ -43,7 +49,7 @@
             <form method="post" action="{% url 'crm:email_marketing_sync' %}" class="d-inline">
                 {% csrf_token %}
                 <input type="hidden" name="provider" value="constant_contact">
-                <button type="submit" class="btn btn-crm-primary" {% if opted_in_count == 0 %}disabled{% endif %}>
+                <button type="submit" class="btn btn-outline-primary btn-sm" {% if opted_in_count == 0 %}disabled{% endif %}>
                     <i class="bi bi-envelope me-1"></i> Sync to Constant Contact
                 </button>
             </form>

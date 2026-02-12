@@ -107,6 +107,8 @@ class Lead(models.Model):
         ('open_house', 'Open House'),
         ('walk_in', 'Walk In'),
         ('website', 'Website'),
+        ('mailchimp', 'Mailchimp'),
+        ('constant_contact', 'Constant Contact'),
         ('email', 'Email'),
         ('phone', 'Phone'),
         ('text', 'Text'),

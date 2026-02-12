@@ -1320,6 +1320,23 @@ def profile_edit(request):
 
 
 @login_required
+def email_marketing_sync_preview(request):
+    """Preview which contacts would be synced; user can then Confirm & Sync from this page."""
+    profile, _ = UserProfile.objects.get_or_create(user=request.user, defaults={})
+    from .email_marketing import get_opted_in_records_with_type
+
+    records = get_opted_in_records_with_type(user=request.user)
+    context = {
+        'profile': profile,
+        'records': records,
+        'opted_in_count': len(records),
+        'has_mailchimp': profile.has_mailchimp_connected(),
+        'has_constant_contact': profile.has_constant_contact_connected(),
+    }
+    return render(request, 'crm/email_marketing_sync_preview.html', context)
+
+
+@login_required
 def email_marketing_sync(request):
     """Sync opted-in Clients, Leads, and Contacts to Mailchimp or Constant Contact (using current user's profile)."""
     profile, _ = UserProfile.objects.get_or_create(user=request.user, defaults={})

@@ -193,3 +193,62 @@ def get_opted_in_records(user, include_clients=True, include_leads=True, include
             seen.add(e)
             unique.append(r)
     return unique
+
+
+def get_opted_in_records_with_type(user, include_clients=True, include_leads=True, include_contacts=True):
+    """
+    Like get_opted_in_records but each dict includes 'record_type': 'Client' | 'Lead' | 'Contact'.
+    Used for the sync preview page so you can review who will be synced.
+    """
+    from .models import Client, Lead, Contact
+    if user is None:
+        return []
+    records = []
+    if include_clients:
+        for c in Client.objects.filter(user=user, newsletter_opt_in=True).exclude(email='').exclude(email__isnull=True):
+            records.append({
+                'email': c.email,
+                'first_name': c.first_name or '',
+                'last_name': c.last_name or '',
+                'phone': c.phone or '',
+                'address': c.address or '',
+                'city': c.city or '',
+                'state': c.state or '',
+                'zip_code': c.zip_code or '',
+                'record_type': 'Client',
+            })
+    if include_leads:
+        for c in Lead.objects.filter(user=user, newsletter_opt_in=True).exclude(email='').exclude(email__isnull=True):
+            records.append({
+                'email': c.email,
+                'first_name': c.first_name or '',
+                'last_name': c.last_name or '',
+                'phone': c.phone or '',
+                'address': c.address or '',
+                'city': c.city or '',
+                'state': c.state or '',
+                'zip_code': c.zip_code or '',
+                'record_type': 'Lead',
+            })
+    if include_contacts:
+        for c in Contact.objects.filter(user=user, newsletter_opt_in=True).exclude(email='').exclude(email__isnull=True):
+            records.append({
+                'email': c.email,
+                'first_name': c.first_name or '',
+                'last_name': c.last_name or '',
+                'phone': c.phone or '',
+                'address': c.address or '',
+                'city': c.city or '',
+                'state': c.state or '',
+                'zip_code': c.zip_code or '',
+                'record_type': 'Contact',
+            })
+    # Dedupe by email (keep first)
+    seen = set()
+    unique = []
+    for r in records:
+        e = (r.get('email') or '').strip().lower()
+        if e and e not in seen:
+            seen.add(e)
+            unique.append(r)
+    return unique

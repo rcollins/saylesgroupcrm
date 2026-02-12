@@ -8,6 +8,7 @@ urlpatterns = [
     path('signup/', views.signup, name='signup'),
     path('profile/', views.profile_edit, name='profile'),
     path('profile/sync/', views.email_marketing_sync, name='email_marketing_sync'),
+    path('profile/sync/preview/', views.email_marketing_sync_preview, name='email_marketing_sync_preview'),
     # Clients
     path('clients/', views.ClientListView.as_view(), name='client_list'),
     path('clients/export/', views.export_clients, name='client_export'),

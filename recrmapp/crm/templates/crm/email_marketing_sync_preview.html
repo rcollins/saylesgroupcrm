@@ -1,0 +1,73 @@
+{% extends 'crm/base.html' %}
+{% block title %}Newsletter sync – Preview{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'crm:home' %}">Dashboard</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'crm:profile' %}">Profile</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'crm:email_marketing_sync' %}">Newsletter sync</a></li>
+        <li class="breadcrumb-item active">Preview</li>
+    </ol>
+</nav>
+
+<h1 class="page-title mb-4">Preview: who will be synced</h1>
+<p class="text-muted small mb-4">The following <strong>{{ opted_in_count }}</strong> contact(s) will be sent when you confirm. No changes are made until you click Confirm & Sync.</p>
+
+<div class="card card-crm mb-4">
+    <div class="card-body p-0">
+        {% if records %}
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Email</th>
+                        <th>First name</th>
+                        <th>Last name</th>
+                        <th>Type</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in records %}
+                    <tr>
+                        <td>{{ r.email }}</td>
+                        <td>{{ r.first_name|default:"—" }}</td>
+                        <td>{{ r.last_name|default:"—" }}</td>
+                        <td><span class="badge bg-secondary">{{ r.record_type }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted p-3 mb-0">No opted-in contacts to sync.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="d-flex flex-wrap align-items-center gap-2">
+    <a href="{% url 'crm:email_marketing_sync' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Back
+    </a>
+    {% if records %}
+        {% if has_mailchimp %}
+        <form method="post" action="{% url 'crm:email_marketing_sync' %}" class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="provider" value="mailchimp">
+            <button type="submit" class="btn btn-crm-primary">
+                <i class="bi bi-check2 me-1"></i> Confirm & Sync to Mailchimp
+            </button>
+        </form>
+        {% endif %}
+        {% if has_constant_contact %}
+        <form method="post" action="{% url 'crm:email_marketing_sync' %}" class="d-inline">
+            {% csrf_token %}
+            <input type="hidden" name="provider" value="constant_contact">
+            <button type="submit" class="btn btn-crm-primary">
+                <i class="bi bi-check2 me-1"></i> Confirm & Sync to Constant Contact
+            </button>
+        </form>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}
