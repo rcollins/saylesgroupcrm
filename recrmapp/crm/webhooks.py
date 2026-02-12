@@ -33,13 +33,16 @@ def _verify_mailchimp_secret(request):
 
 
 @csrf_exempt
-@require_http_methods(['POST'])
 def mailchimp_webhook(request):
     """
     Mailchimp audience webhook: subscribe / unsubscribe / profile update.
+    POST: process webhook payload. GET: allow URL verification / browser hit (return 200, no action).
     Body is application/x-www-form-urlencoded with 'type' and 'data' (data may be JSON string).
     See: https://mailchimp.com/developer/marketing/guides/sync-audience-data-webhooks/
     """
+    if request.method != 'POST':
+        return HttpResponse('Mailchimp webhook endpoint; use POST for events.', status=200)
+
     if not _verify_mailchimp_secret(request):
         logger.warning('Mailchimp webhook: invalid or missing secret')
         return HttpResponse(status=403)
