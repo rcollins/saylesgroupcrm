@@ -231,9 +231,4 @@ CSRF_COOKIE_SAMESITE = 'Lax'
 # Inbound webhooks (Mailchimp / Constant Contact → CRM)
 # Optional: set in .env for production. Mailchimp recommends a secret in the webhook URL.
 MAILCHIMP_WEBHOOK_SECRET = os.environ.get('MAILCHIMP_WEBHOOK_SECRET', '')
-# Optional: User ID who will own Leads created from webhooks; default is first staff user.
-WEBHOOK_LEAD_OWNER_ID = os.environ.get('WEBHOOK_LEAD_OWNER_ID', '') or None
-if WEBHOOK_LEAD_OWNER_ID is not None and str(WEBHOOK_LEAD_OWNER_ID).isdigit():
-    WEBHOOK_LEAD_OWNER_ID = int(WEBHOOK_LEAD_OWNER_ID)
-else:
-    WEBHOOK_LEAD_OWNER_ID = None
+# Mailchimp leads are assigned only by matching the webhook list_id to a user's Profile Audience ID (no global override).

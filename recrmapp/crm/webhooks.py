@@ -13,16 +13,24 @@ from django.views.decorators.csrf import csrf_exempt
 logger = logging.getLogger(__name__)
 
 
-def _get_webhook_lead_owner():
-    """Return the User to own Leads created from webhooks (first staff user or WEBHOOK_LEAD_OWNER_ID)."""
-    from django.contrib.auth import get_user_model
-    User = get_user_model()
-    owner_id = getattr(settings, 'WEBHOOK_LEAD_OWNER_ID', None)
-    if owner_id:
-        user = User.objects.filter(pk=owner_id, is_active=True).first()
-        if user:
-            return user
-    return User.objects.filter(is_staff=True, is_active=True).order_by('pk').first()
+def _get_webhook_lead_owner_for_mailchimp(list_id=None):
+    """
+    Return the User who should own Leads created from Mailchimp webhooks.
+    Only the user whose Profile has this Mailchimp Audience (list) ID gets the lead.
+    No .env fallback: each agent must have their Audience ID set so their leads
+    stay theirs; we never assign to a different agent.
+    """
+    from .models import UserProfile
+    list_id = (list_id or '').strip()
+    if not list_id:
+        return None
+    profile = UserProfile.objects.filter(
+        user__is_active=True,
+        mailchimp_audience_id__iexact=list_id,
+    ).exclude(mailchimp_audience_id='').first()
+    if profile and profile.has_mailchimp_connected():
+        return profile.user
+    return None
 
 
 def _verify_mailchimp_secret(request):
@@ -149,9 +157,14 @@ def mailchimp_webhook(request):
         return HttpResponse(status=200)
 
     if event_type == 'subscribe' or event_type == 'profile update':
-        owner = _get_webhook_lead_owner()
+        list_id = data.get('list_id') or ''
+        owner = _get_webhook_lead_owner_for_mailchimp(list_id)
         if not owner:
-            logger.error('Mailchimp webhook: no webhook lead owner (set WEBHOOK_LEAD_OWNER_ID or add a staff user)')
+            logger.error(
+                'Mailchimp webhook: no lead owner for list_id=%s. '
+                'That agent must set this Audience ID in their Profile (Mailchimp section).',
+                list_id or '(empty)'
+            )
             return HttpResponse(status=500)
 
         # Match by email (any owner); create only if none exist
