@@ -67,6 +67,11 @@
         </button>
     </div>
     <div class="card-body p-0">
+        {% for lead in leads %}
+        {% if not lead.is_converted %}
+        <form id="lead-convert-form-{{ lead.pk }}" method="post" action="{% url 'crm:lead_convert' lead.pk %}" class="d-none">{% csrf_token %}</form>
+        {% endif %}
+        {% endfor %}
         <form id="lead-bulk-form" method="post" action="{% url 'crm:lead_bulk_delete' %}">
             {% csrf_token %}
             <div class="table-responsive">
@@ -106,9 +111,7 @@
                             <a href="{% url 'crm:lead_detail' lead.pk %}" class="btn btn-sm btn-outline-secondary">View</a>
                             <a href="{% url 'crm:lead_edit' lead.pk %}" class="btn btn-sm btn-outline-primary">Edit</a>
                             {% if not lead.is_converted %}
-                            <form method="post" action="{% url 'crm:lead_convert' lead.pk %}" class="d-inline">{% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-crm-primary">Convert</button>
-                            </form>
+                            <button type="submit" form="lead-convert-form-{{ lead.pk }}" class="btn btn-sm btn-crm-primary">Convert</button>
                             {% else %}
                             <a href="{% url 'crm:client_detail' lead.converted_to_client.pk %}" class="btn btn-sm btn-outline-secondary">View Client</a>
                             {% endif %}
