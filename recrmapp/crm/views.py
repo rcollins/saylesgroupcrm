@@ -1438,7 +1438,7 @@ def app_admin_choice_add(request):
     list_type = request.POST.get('list_type', '')
     allowed = [t[0] for t in ChoiceList.LIST_TYPE_CHOICES]
     fragment = ('#list-' + list_type) if list_type in allowed else ''
-    return redirect('crm:app_admin' + fragment)
+    return redirect(reverse('crm:app_admin') + fragment)
 
 
 def app_admin_choice_edit(request, pk):
@@ -1453,7 +1453,7 @@ def app_admin_choice_edit(request, pk):
             form.save()
             invalidate_choice_cache(choice.list_type)
             messages.success(request, 'Choice updated.')
-            return redirect('crm:app_admin' + '#list-' + choice.list_type)
+            return redirect(reverse('crm:app_admin') + '#list-' + choice.list_type)
     else:
         form = ChoiceListForm(instance=choice)
     return render(request, 'crm/app_admin_choice_edit.html', {'form': form, 'choice': choice})
@@ -1470,4 +1470,4 @@ def app_admin_choice_delete(request, pk):
     choice.delete()
     invalidate_choice_cache(list_type)
     messages.success(request, 'Choice removed.')
-    return redirect('crm:app_admin' + '#list-' + list_type)
+    return redirect(reverse('crm:app_admin') + '#list-' + list_type)

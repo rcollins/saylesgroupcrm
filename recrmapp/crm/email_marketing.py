@@ -83,7 +83,10 @@ def sync_to_mailchimp(profile, records):
 
 def sync_to_constant_contact(profile, records):
     """
-    Add or update contacts in Constant Contact via sign_up_form (create or update by email).
+    Add or update contacts in Constant Contact using the V3 API sign_up_form endpoint.
+    See: https://developer.constantcontact.com/api_guide/v3_technical_overview.html
+    and https://v3.developer.constantcontact.com/api_guide/contacts_create_or_update.html
+
     Uses profile tokens and profile.constant_contact_list_id.
     records: list of dicts with email, first_name, last_name, phone, address, city, state, zip_code.
     Returns: (synced_count, errors_list).
@@ -94,10 +97,12 @@ def sync_to_constant_contact(profile, records):
     list_id = (profile.constant_contact_list_id or '').strip()
     if not access_token or not list_id:
         return 0, [{'email': None, 'error': 'Constant Contact access token and List ID are required.'}]
+    # V3 API: https://api.cc.email/v3 (JSON only, Bearer token, Accept/Content-Type application/json)
     base_url = 'https://api.cc.email/v3/contacts/sign_up_form'
     headers = {
         'Authorization': f'Bearer {access_token}',
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
     }
     synced = 0
     errors = []
@@ -106,18 +111,20 @@ def sync_to_constant_contact(profile, records):
         email = payload['email']
         if not email:
             continue
+        # V3 sign_up_form: email_address, list_memberships (required); first_name, last_name, phone_number, street_address optional
         body = {
             'email_address': email,
-            'first_name': payload['first_name'] or '',
-            'last_name': payload['last_name'] or '',
+            'first_name': (payload['first_name'] or '')[:50],
+            'last_name': (payload['last_name'] or '')[:50],
             'list_memberships': [list_id],
+            'create_source': 'Account',  # Contact added from CRM/account
         }
         if payload['phone']:
-            body['phone_number'] = payload['phone']
+            body['phone_number'] = (payload['phone'] or '')[:50]
         if payload['address'] or payload['city'] or payload['state'] or payload['zip_code']:
             body['street_address'] = {
                 'kind': 'home',
-                'street': (payload['address'] or '')[:80],
+                'street': (payload['address'] or '')[:50],
                 'city': (payload['city'] or '')[:50],
                 'state': (payload['state'] or '')[:50],
                 'postal_code': (payload['zip_code'] or '')[:20],
