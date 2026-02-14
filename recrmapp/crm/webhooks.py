@@ -33,6 +33,29 @@ def _verify_mailchimp_secret(request):
     return request.GET.get('secret') == secret
 
 
+def _build_data_from_flat_form(parsed):
+    """
+    Build data dict from flattened form keys like data[email], data[merges][FNAME].
+    parsed is the result of parse_qs (keys are strings, values are lists of one element).
+    """
+    data = {}
+    for key, val_list in parsed.items():
+        if not key.startswith('data[') or not val_list:
+            continue
+        val = val_list[0]
+        # key is e.g. "data[email]" or "data[merges][FNAME]"
+        path = key[5:-1].split('][')  # 'data[email]' -> ['email']; 'data[merges][FNAME]' -> ['merges', 'FNAME']
+        if not path:
+            continue
+        d = data
+        for i, part in enumerate(path[:-1]):
+            if part not in d:
+                d[part] = {}
+            d = d[part]
+        d[path[-1]] = val
+    return data
+
+
 @csrf_exempt
 def mailchimp_webhook(request):
     """
@@ -59,12 +82,18 @@ def mailchimp_webhook(request):
     if body_bytes:
         body_str = body_bytes.decode('utf-8') if isinstance(body_bytes, bytes) else body_bytes
 
+    parsed = None
     if not data_raw and body_str:
-        # Fallback 1: form-encoded body (type=subscribe&data={...})
+        # Fallback 1: form-encoded body (type=subscribe&data={...} or flattened data[email]=...)
         try:
             parsed = parse_qs(body_str, keep_blank_values=True)
             event_type = (parsed.get('type') or [''])[0]
             data_raw = (parsed.get('data') or [''])[0]
+            # Mailchimp may send flattened keys (data[email], data[merges][FNAME]) instead of one data=JSON
+            if not data_raw and parsed and event_type:
+                flat_data = _build_data_from_flat_form(parsed)
+                if flat_data.get('email'):
+                    data_raw = flat_data  # use dict directly
         except Exception as e:
             logger.warning('Mailchimp webhook: parse_qs failed: %s', e)
     if not data_raw and body_str and body_str.strip().startswith('{'):
