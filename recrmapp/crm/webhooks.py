@@ -4,10 +4,11 @@ POST-only, CSRF-exempt endpoints. Verify secret via query param (e.g. ?secret=xx
 """
 import json
 import logging
+from urllib.parse import parse_qs
+
 from django.conf import settings
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
 
 logger = logging.getLogger(__name__)
 
@@ -43,15 +44,46 @@ def mailchimp_webhook(request):
     if request.method != 'POST':
         return HttpResponse('Mailchimp webhook endpoint; use POST for events.', status=200)
 
+    logger.info('Mailchimp webhook: POST received (body_len=%s)', len(request.body) if request.body else 0)
+
     if not _verify_mailchimp_secret(request):
         logger.warning('Mailchimp webhook: invalid or missing secret')
         return HttpResponse(status=403)
 
-    # Parse payload: form-encoded; 'data' is often a JSON string
+    # Parse payload. Mailchimp sends application/x-www-form-urlencoded with 'type' and 'data' (data = JSON string).
+    # On Vercel/serverless request.POST may be empty; try request.body. Also accept raw JSON body.
     event_type = request.POST.get('type') or ''
     data_raw = request.POST.get('data')
+    body_bytes = request.body
+    body_str = None
+    if body_bytes:
+        body_str = body_bytes.decode('utf-8') if isinstance(body_bytes, bytes) else body_bytes
+
+    if not data_raw and body_str:
+        # Fallback 1: form-encoded body (type=subscribe&data={...})
+        try:
+            parsed = parse_qs(body_str, keep_blank_values=True)
+            event_type = (parsed.get('type') or [''])[0]
+            data_raw = (parsed.get('data') or [''])[0]
+        except Exception as e:
+            logger.warning('Mailchimp webhook: parse_qs failed: %s', e)
+    if not data_raw and body_str and body_str.strip().startswith('{'):
+        # Fallback 2: raw JSON body {"type": "subscribe", "data": {...}}
+        try:
+            payload = json.loads(body_str)
+            event_type = (payload.get('type') or '').strip()
+            data_raw = payload.get('data')
+            if data_raw is not None and not isinstance(data_raw, str):
+                data_raw = json.dumps(data_raw)
+        except Exception as e:
+            logger.warning('Mailchimp webhook: JSON body parse failed: %s', e)
+
     if not data_raw:
-        logger.warning('Mailchimp webhook: missing data')
+        content_type = request.META.get('CONTENT_TYPE', '')[:80]
+        logger.warning(
+            'Mailchimp webhook: missing data (type=%s, body_len=%s, content_type=%s)',
+            event_type, len(body_bytes) if body_bytes else 0, content_type
+        )
         return HttpResponse(status=400)
 
     try:
